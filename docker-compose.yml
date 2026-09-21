@@ -1,0 +1,65 @@
+services:
+  # Base de Datos PostgreSQL 16
+  postgres:
+    image: postgres:16-alpine
+    container_name: sisedgua_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sisedgua}
+      POSTGRES_USER: ${DB_USER:-sisedgua_user}
+      POSTGRES_PASSWORD: ${DB_PASS:-sisedgua_secure_password_2026}
+      TZ: America/Caracas
+    volumes:
+      - sisedgua_pgdata:/var/lib/postgresql/data
+    networks:
+      - sisedgua_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sisedgua_user} -d ${DB_NAME:-sisedgua}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend Node.js / Express
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sisedgua_backend
+    restart: always
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-sisedgua}
+      DB_USER: ${DB_USER:-sisedgua_user}
+      DB_PASS: ${DB_PASS:-sisedgua_secure_password_2026}
+      JWT_SECRET: ${JWT_SECRET:-sisedgua_super_secret_jwt_key_2026}
+      TZ: America/Caracas
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sisedgua_net
+
+  # Frontend React / Vite compilado sobre Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sisedgua_frontend
+    restart: always
+    ports:
+      - "8080:80" # En Dokploy puedes exponer el puerto 8080 o apuntar al frontend
+    depends_on:
+      - backend
+    networks:
+      - sisedgua_net
+
+networks:
+  sisedgua_net:
+    driver: bridge
+
+volumes:
+  sisedgua_pgdata:
+    driver: local
