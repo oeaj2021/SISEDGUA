@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import StatsCard from '../components/StatsCard';
 import ExportButton from '../components/ExportButton';
 import GestionInstituciones from '../components/GestionInstituciones';
+import GestionCapacidadMunicipios from '../components/GestionCapacidadMunicipios';
 import { getStats, getPorMunicipio, getTendencia, getReportes } from '../services/api';
 
 const MUNICIPIOS = [
@@ -18,7 +19,7 @@ const MUNICIPIOS = [
 export default function Dashboard() {
   const { admin, logout } = useAuth();
 
-  // Pestaña activa: 'estadisticas' | 'instituciones'
+  // Pestaña activa: 'estadisticas' | 'municipios' | 'instituciones'
   const [pestanaActiva, setPestanaActiva] = useState('estadisticas');
 
   const fechaHoy = new Date().toISOString().split('T')[0];
@@ -105,10 +106,10 @@ export default function Dashboard() {
 
       {/* Selector de Pestañas */}
       <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 flex gap-6">
+        <div className="max-w-7xl mx-auto px-6 flex gap-6 overflow-x-auto">
           <button
             onClick={() => setPestanaActiva('estadisticas')}
-            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition cursor-pointer ${
+            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 whitespace-nowrap transition cursor-pointer ${
               pestanaActiva === 'estadisticas'
                 ? 'border-blue-900 text-blue-950'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -116,22 +117,37 @@ export default function Dashboard() {
           >
             <span>📊</span> Tablero Estadístico & Reportes
           </button>
+
+          <button
+            onClick={() => setPestanaActiva('municipios')}
+            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 whitespace-nowrap transition cursor-pointer ${
+              pestanaActiva === 'municipios'
+                ? 'border-blue-900 text-blue-950'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>🏛️</span> Matrícula y Personal Máximo por Municipio
+          </button>
+
           <button
             onClick={() => setPestanaActiva('instituciones')}
-            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition cursor-pointer ${
+            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 whitespace-nowrap transition cursor-pointer ${
               pestanaActiva === 'instituciones'
                 ? 'border-blue-900 text-blue-950'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <span>🏫</span> Catálogo de Instituciones & Matrícula Máxima
+            <span>🏫</span> Catálogo Escolar de Instituciones
           </button>
         </div>
       </div>
 
       <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6 flex-1">
-        {pestanaActiva === 'instituciones' ? (
-          /* Pestaña: CRUD de Instituciones y Capacidad Máxima */
+        {pestanaActiva === 'municipios' ? (
+          /* Pestaña: Matrícula y Personal Máximo Oficial por Municipio y Turno */
+          <GestionCapacidadMunicipios />
+        ) : pestanaActiva === 'instituciones' ? (
+          /* Pestaña: Catálogo de Instituciones */
           <GestionInstituciones />
         ) : (
           /* Pestaña: Métricas, Gráficas, Filtros y Tabla */

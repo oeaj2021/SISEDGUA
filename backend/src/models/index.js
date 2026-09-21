@@ -2,6 +2,7 @@ const sequelize = require('../config/database');
 const Reporte = require('./Reporte');
 const Admin = require('./Admin');
 const Institucion = require('./Institucion');
+const CapacidadMunicipio = require('./CapacidadMunicipio');
 
 Reporte.belongsTo(Institucion, { foreignKey: 'institucion_id', as: 'institucion' });
 Institucion.hasMany(Reporte, { foreignKey: 'institucion_id', as: 'reportes' });
@@ -22,5 +23,6 @@ module.exports = {
   Reporte,
   Admin,
   Institucion,
+  CapacidadMunicipio,
   syncDatabase
 };

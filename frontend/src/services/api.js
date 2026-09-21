@@ -21,7 +21,11 @@ export const getInstituciones = (params) => api.get('/instituciones', { params }
 export const createInstitucion = (data) => api.post('/instituciones', data);
 export const updateInstitucion = (id, data) => api.put(`/instituciones/${id}`, data);
 export const deleteInstitucion = (id) => api.delete(`/instituciones/${id}`);
-export const getCapacidadesMunicipios = () => api.get('/instituciones/capacidad');
+
+// Gestión de Matrícula Máxima por Municipio y Turno (Admin)
+export const getCapacidadesMunicipio = (params) => api.get('/capacidades', { params });
+export const saveCapacidadMunicipio = (data) => api.post('/capacidades/save', data);
+export const inicializarCapacidadesMunicipio = () => api.post('/capacidades/inicializar');
 
 // Auth & Dashboard
 export const login = (data) => api.post('/auth/login', data);
