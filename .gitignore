@@ -1,4 +1,4 @@
-# Logs
+# Logs y depuración
 logs
 *.log
 npm-debug.log*
@@ -7,22 +7,63 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencias y compilados
+node_modules/
+*/node_modules/
+dist/
+*/dist/
+dist-ssr/
+build/
 *.local
 
-# Editor directories and files
+# Archivos de entorno y credenciales sensibles (CRÍTICO)
+.env
+.env.*
+!.env.example
+*.env
+*.env.*
+!.env.example.*
+
+# Claves, certificados y credenciales de servidor
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+id_rsa
+id_rsa.pub
+id_ecdsa
+id_ed25519
+*.secret
+*.keystore
+
+# Bases de datos, respaldos y volcados
+*.sql
+*.sqlite
+*.sqlite3
+*.dump
+*.db
+*.bak
+*.backup
+pgdata/
+sisedgua_pgdata/
+
+# Archivos de exportación de datos confidenciales
+*.xlsx
+*.xls
+*.csv
+
+# Editores y sistema operativo
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# Environment files
-.env
-.env.production
+*~
+*.bak
