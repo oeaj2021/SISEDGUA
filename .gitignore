@@ -19,10 +19,14 @@ build/
 # Archivos de entorno y credenciales sensibles (CRÍTICO)
 .env
 .env.*
+.env*.local
 !.env.example
 *.env
 *.env.*
 !.env.example.*
+*.credentials
+credentials.json
+secrets.*
 
 # Claves, certificados y credenciales de servidor
 *.pem
