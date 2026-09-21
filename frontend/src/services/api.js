@@ -12,10 +12,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Llamadas API
+// Llamadas API - Reportes & Público
 export const submitReporte = (data) => api.post('/reportes', data);
 export const checkDuplicado = (params) => api.get('/reportes/check-duplicado', { params });
 export const getInstituciones = (params) => api.get('/instituciones', { params });
+
+// CRUD Instituciones (Admin)
+export const createInstitucion = (data) => api.post('/instituciones', data);
+export const updateInstitucion = (id, data) => api.put(`/instituciones/${id}`, data);
+export const deleteInstitucion = (id) => api.delete(`/instituciones/${id}`);
+export const getCapacidadesMunicipios = () => api.get('/instituciones/capacidad');
+
+// Auth & Dashboard
 export const login = (data) => api.post('/auth/login', data);
 export const getStats = (params) => api.get('/dashboard/stats', { params });
 export const getPorMunicipio = (params) => api.get('/dashboard/por-municipio', { params });

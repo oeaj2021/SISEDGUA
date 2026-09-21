@@ -19,6 +19,37 @@ const Institucion = sequelize.define('Institucion', {
     type: DataTypes.STRING(50),
     allowNull: true
   },
+  turno: {
+    type: DataTypes.ENUM('MAÑANA', 'TARDE', 'AMBOS'),
+    allowNull: false,
+    defaultValue: 'AMBOS'
+  },
+  // Capacidad o límites máximos esperados
+  max_matricula: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  max_docentes: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  max_administrativo: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  max_obreros: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  max_cocineros: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
   activo: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -26,7 +57,8 @@ const Institucion = sequelize.define('Institucion', {
 }, {
   tableName: 'instituciones',
   indexes: [
-    { fields: ['municipio'] }
+    { fields: ['municipio'] },
+    { fields: ['turno'] }
   ]
 });
 
