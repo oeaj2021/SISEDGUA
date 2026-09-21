@@ -3,62 +3,55 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: sisedgua_postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-sisedgua}
-      POSTGRES_USER: ${DB_USER:-sisedgua_user}
-      POSTGRES_PASSWORD: ${DB_PASS:-sisedgua_secure_password_2026}
+      POSTGRES_USER: ${DB_USER:-sisedgua_admin}
+      POSTGRES_PASSWORD: ${DB_PASS:-557f49dc843f5fe53b04c860103b28b0}
       TZ: America/Caracas
     volumes:
       - sisedgua_pgdata:/var/lib/postgresql/data
-    networks:
-      - sisedgua_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sisedgua_user} -d ${DB_NAME:-sisedgua}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sisedgua_admin} -d ${DB_NAME:-sisedgua}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Backend Node.js / Express
+  # Backend Node.js / Express API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: sisedgua_backend
-    restart: always
+    restart: unless-stopped
     environment:
       PORT: 3001
       NODE_ENV: production
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-sisedgua}
-      DB_USER: ${DB_USER:-sisedgua_user}
-      DB_PASS: ${DB_PASS:-sisedgua_secure_password_2026}
-      JWT_SECRET: ${JWT_SECRET:-sisedgua_super_secret_jwt_key_2026}
+      DB_USER: ${DB_USER:-sisedgua_admin}
+      DB_PASS: ${DB_PASS:-557f49dc843f5fe53b04c860103b28b0}
+      JWT_SECRET: ${JWT_SECRET:-a68c7a75d1e8f02751941bb26ba5d1fe056b55b0301d40f7178ab4738cdec51a}
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@sisedgua.ve}
+      DEFAULT_ADMIN_PASS: ${DEFAULT_ADMIN_PASS:-okmLIqlAFOWzIg@2026!}
+      DEFAULT_ADMIN_NAME: "Administrador Zona Educativa Guárico"
       TZ: America/Caracas
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - sisedgua_net
 
-  # Frontend React / Vite compilado sobre Nginx
+  # Frontend Web (React SPA + Reverse Proxy Nginx para Dokploy)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: sisedgua_frontend
-    restart: always
+    restart: unless-stopped
     ports:
-      - "8080:80" # En Dokploy puedes exponer el puerto 8080 o apuntar al frontend
+      - "8080:80"
     depends_on:
       - backend
-    networks:
-      - sisedgua_net
-
-networks:
-  sisedgua_net:
-    driver: bridge
 
 volumes:
   sisedgua_pgdata:
