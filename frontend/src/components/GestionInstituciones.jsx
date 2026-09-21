@@ -4,6 +4,7 @@ import {
   createInstitucion,
   updateInstitucion,
   deleteInstitucion,
+  deleteInstitucionesBatch,
   getCapacidadesMunicipios
 } from '../services/api';
 
@@ -33,6 +34,10 @@ export default function GestionInstituciones() {
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(false);
 
+  // Selección múltiple de filas para eliminación
+  const [seleccionados, setSeleccionados] = useState([]);
+  const [eliminandoBatch, setEliminandoBatch] = useState(false);
+
   // Estado del Modal / Formulario
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -42,6 +47,7 @@ export default function GestionInstituciones() {
 
   const cargarDatos = async () => {
     setCargando(true);
+    setSeleccionados([]);
     try {
       const params = {};
       if (filtroMunicipio) params.municipio = filtroMunicipio;
@@ -130,6 +136,39 @@ export default function GestionInstituciones() {
     }
   };
 
+  // Manejo de Selección Múltiple
+  const handleToggleFila = (id) => {
+    setSeleccionados((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleTodos = () => {
+    if (seleccionados.length === instituciones.length) {
+      setSeleccionados([]);
+    } else {
+      setSeleccionados(instituciones.map((i) => i.id));
+    }
+  };
+
+  const handleEliminarSeleccionados = async () => {
+    if (seleccionados.length === 0) return;
+    const confirmacion = window.confirm(
+      `¿Está seguro de eliminar las ${seleccionados.length} instituciones seleccionadas? Esta acción no se puede deshacer.`
+    );
+    if (!confirmacion) return;
+
+    setEliminandoBatch(true);
+    try {
+      await deleteInstitucionesBatch(seleccionados);
+      cargarDatos();
+    } catch (err) {
+      alert('Error al eliminar las instituciones seleccionadas.');
+    } finally {
+      setEliminandoBatch(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Resumen de Capacidades Globales por Municipio */}
@@ -188,22 +227,47 @@ export default function GestionInstituciones() {
           </select>
         </div>
 
-        <button
-          type="button"
-          onClick={abrirCrear}
-          className="bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-        >
-          <span>➕</span>
-          <span>Nueva Institución</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {seleccionados.length > 0 && (
+            <button
+              type="button"
+              disabled={eliminandoBatch}
+              onClick={handleEliminarSeleccionados}
+              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-3.5 rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 animate-pulse"
+            >
+              <span>🗑️</span>
+              <span>
+                {eliminandoBatch ? 'Eliminando...' : `Eliminar Seleccionados (${seleccionados.length})`}
+              </span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={abrirCrear}
+            className="bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>➕</span>
+            <span>Nueva Institución</span>
+          </button>
+        </div>
       </div>
 
-      {/* Tabla de Instituciones */}
+      {/* Tabla de Instituciones con Selección Múltiple */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-blue-950 text-white uppercase text-[10px] tracking-wider">
               <tr>
+                <th className="px-3 py-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={instituciones.length > 0 && seleccionados.length === instituciones.length}
+                    onChange={handleToggleTodos}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-800 cursor-pointer"
+                    title="Seleccionar / Deseleccionar todos"
+                  />
+                </th>
                 <th className="px-4 py-3">Municipio</th>
                 <th className="px-4 py-3">Institución</th>
                 <th className="px-4 py-3">Código</th>
@@ -218,39 +282,53 @@ export default function GestionInstituciones() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {instituciones.length > 0 ? (
-                instituciones.map((inst) => (
-                  <tr key={inst.id} className="hover:bg-slate-50 transition">
-                    <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">{inst.municipio}</td>
-                    <td className="px-4 py-3 font-semibold text-slate-900">{inst.nombre}</td>
-                    <td className="px-4 py-3 font-mono text-slate-500">{inst.codigo || '-'}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                        {inst.turno}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold text-blue-900">{inst.max_matricula || 0}</td>
-                    <td className="px-4 py-3 text-center font-bold text-emerald-800">{inst.max_docentes || 0}</td>
-                    <td className="px-4 py-3 text-center text-slate-600">{inst.max_administrativo || 0}</td>
-                    <td className="px-4 py-3 text-center text-slate-600">{inst.max_obreros || 0}</td>
-                    <td className="px-4 py-3 text-center text-slate-600">{inst.max_cocineros || 0}</td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => abrirEditar(inst)}
-                        className="text-blue-700 hover:text-blue-900 font-bold underline"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEliminar(inst.id, inst.nombre)}
-                        className="text-rose-600 hover:text-rose-800 font-bold underline"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                instituciones.map((inst) => {
+                  const estaSeleccionado = seleccionados.includes(inst.id);
+                  return (
+                    <tr
+                      key={inst.id}
+                      className={`transition ${estaSeleccionado ? 'bg-blue-50/80 font-medium' : 'hover:bg-slate-50'}`}
+                    >
+                      <td className="px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={estaSeleccionado}
+                          onChange={() => handleToggleFila(inst.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-800 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">{inst.municipio}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-900">{inst.nombre}</td>
+                      <td className="px-4 py-3 font-mono text-slate-500">{inst.codigo || '-'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                          {inst.turno}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold text-blue-900">{inst.max_matricula || 0}</td>
+                      <td className="px-4 py-3 text-center font-bold text-emerald-800">{inst.max_docentes || 0}</td>
+                      <td className="px-4 py-3 text-center text-slate-600">{inst.max_administrativo || 0}</td>
+                      <td className="px-4 py-3 text-center text-slate-600">{inst.max_obreros || 0}</td>
+                      <td className="px-4 py-3 text-center text-slate-600">{inst.max_cocineros || 0}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => abrirEditar(inst)}
+                          className="text-blue-700 hover:text-blue-900 font-bold underline"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEliminar(inst.id, inst.nombre)}
+                          className="text-rose-600 hover:text-rose-800 font-bold underline"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={10} className="px-4 py-8 text-center text-slate-400">

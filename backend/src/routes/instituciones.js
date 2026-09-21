@@ -9,6 +9,7 @@ router.get('/:id', auth, ctrl.getById);
 
 // Operaciones protegidas de Administrador
 router.post('/', auth, ctrl.create);
+router.post('/delete-batch', auth, ctrl.deleteBatch);
 router.put('/:id', auth, ctrl.update);
 router.delete('/:id', auth, ctrl.delete);
 

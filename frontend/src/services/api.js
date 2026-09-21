@@ -21,6 +21,7 @@ export const getInstituciones = (params) => api.get('/instituciones', { params }
 export const createInstitucion = (data) => api.post('/instituciones', data);
 export const updateInstitucion = (id, data) => api.put(`/instituciones/${id}`, data);
 export const deleteInstitucion = (id) => api.delete(`/instituciones/${id}`);
+export const deleteInstitucionesBatch = (ids) => api.post('/instituciones/delete-batch', { ids });
 
 // Gestión de Matrícula Máxima por Municipio y Turno (Admin)
 export const getCapacidadesMunicipio = (params) => api.get('/capacidades', { params });

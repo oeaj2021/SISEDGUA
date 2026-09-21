@@ -150,6 +150,31 @@ exports.delete = async (req, res) => {
   }
 };
 
+// Eliminación masiva de múltiples filas seleccionadas
+exports.deleteBatch = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Debe proporcionar un arreglo de IDs a eliminar' });
+    }
+
+    const eliminados = await Institucion.destroy({
+      where: {
+        id: { [Op.in]: ids }
+      }
+    });
+
+    return res.json({
+      ok: true,
+      mensaje: `${eliminados} instituciones eliminadas exitosamente`,
+      eliminados
+    });
+  } catch (error) {
+    console.error('Error en eliminación masiva:', error);
+    return res.status(500).json({ error: 'Error al eliminar las instituciones seleccionadas' });
+  }
+};
+
 // Resumen de capacidad agregada por municipio y turno
 exports.getCapacidadMunicipios = async (req, res) => {
   try {
