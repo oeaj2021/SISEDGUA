@@ -2,33 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { submitReporte, checkDuplicado } from '../services/api';
 import FormBlockedScreen from './FormBlockedScreen';
 import InstitucionSelector from './InstitucionSelector';
+import { HORARIOS, validarHorarioTurno } from '../utils/horario';
 
 const MUNICIPIOS = [
   'ROSCIO', 'ORTIZ', 'MELLADO', 'MIRANDA', 'GUAYABAL', 'CAMAGUAN',
   'CHAGUARAMAS', 'MONAGAS', 'GUARIBE', 'RONDON', 'INFANTE',
   'EL SOCORRO', 'SANTA MARIA', 'RIBAS', 'ZARAZA'
 ];
-
-const HORARIOS = {
-  MAÑANA: { inicio: 7, fin: 12 },
-  TARDE:  { inicio: 13, fin: 22 }
-};
-
-function getHoraVenezuelaDecimal() {
-  const ve = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Caracas' }));
-  return ve.getHours() + ve.getMinutes() / 60;
-}
-
-function validarHorarioTurno(turno) {
-  // Flag opcional en localStorage para pruebas locales si se requiere
-  if (localStorage.getItem('SISEDGUA_BYPASS_SCHEDULE') === 'true') {
-    return true;
-  }
-  const config = HORARIOS[turno];
-  if (!config) return true;
-  const hora = getHoraVenezuelaDecimal();
-  return hora >= config.inicio && hora < config.fin;
-}
 
 const estadoInicial = {
   municipio: [],

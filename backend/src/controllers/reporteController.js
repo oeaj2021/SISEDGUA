@@ -105,3 +105,54 @@ exports.checkDuplicado = async (req, res) => {
     return res.status(500).json({ error: 'Error al verificar duplicado' });
   }
 };
+
+exports.getConteoHoy = async (req, res) => {
+  try {
+    const now = new Date();
+    const venezuelaOffset = -4 * 60; // minutos (UTC-4)
+    const localMs = now.getTime() + (now.getTimezoneOffset() + venezuelaOffset) * 60000;
+    const local = new Date(localMs);
+    const fechaHoy = local.toISOString().split('T')[0];
+
+    const reportesHoy = await Reporte.findAll({
+      where: { fecha: fechaHoy },
+      attributes: ['municipio', 'turno']
+    });
+
+    const conteo = {};
+    MUNICIPIOS_VALIDOS.forEach(m => {
+      conteo[m] = {
+        municipio: m,
+        total: 0,
+        manana: 0,
+        tarde: 0
+      };
+    });
+
+    let totalGeneral = 0;
+
+    reportesHoy.forEach(r => {
+      totalGeneral += 1;
+      if (Array.isArray(r.municipio)) {
+        r.municipio.forEach(m => {
+          const mun = (m || '').toUpperCase().trim();
+          if (conteo[mun]) {
+            conteo[mun].total += 1;
+            if (r.turno === 'MAÑANA') conteo[mun].manana += 1;
+            if (r.turno === 'TARDE') conteo[mun].tarde += 1;
+          }
+        });
+      }
+    });
+
+    return res.json({
+      fecha: fechaHoy,
+      total_general: totalGeneral,
+      por_municipio: Object.values(conteo)
+    });
+  } catch (error) {
+    console.error('Error al obtener conteo de hoy:', error);
+    return res.status(500).json({ error: 'Error al consultar conteo de reportes' });
+  }
+};
+
