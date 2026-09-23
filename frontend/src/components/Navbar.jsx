@@ -28,67 +28,67 @@ export default function Navbar() {
   };
 
   const navLinkClass = ({ isActive }) =>
-    `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+    `flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors ${
       isActive
-        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+        ? 'bg-white text-blue-900 shadow-sm'
+        : 'text-blue-100 hover:bg-blue-800 hover:text-white'
     }`;
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-xs">
+    <header className="sticky top-0 z-50 shadow-md">
       {/* Cintillo Informativo Superior: Conteo por Municipio Registrados Hoy */}
       <ConteoMunicipiosBar />
 
-      {/* Barra Principal de Navegación Profesional y Limpia */}
-      <nav className="bg-white border-b border-slate-200 px-4 py-2.5">
+      {/* Barra Principal de Navegación en Azul Real y Blanco */}
+      <nav className="bg-blue-900 border-b border-blue-950 px-4 py-2.5 text-white">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Identidad / Logo */}
           <NavLink to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-xl shadow-xs group-hover:bg-blue-100 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-white text-blue-900 flex items-center justify-center text-xl font-black shadow-sm group-hover:bg-blue-50 transition-colors">
               🏫
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-base sm:text-lg tracking-tight">
+                <span className="font-black text-white text-base sm:text-lg tracking-tight">
                   SISEDGUA
                 </span>
-                <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded-md">
+                <span className="hidden sm:inline-block text-[10px] font-black uppercase tracking-wider bg-amber-400 text-blue-950 px-2 py-0.5 rounded-md shadow-xs">
                   Guárico
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-normal hidden md:block">
+              <p className="text-[11px] text-blue-100 font-medium hidden md:block">
                 Centro Desarrollo de la Calidad Educativa Guárico · Control de Asistencia
               </p>
             </div>
           </NavLink>
 
           {/* Reloj y Estado del Turno (Centro en Desktop) */}
-          <div className="hidden lg:flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+          <div className="hidden lg:flex items-center gap-3 bg-blue-950 border border-blue-800 px-3.5 py-1.5 rounded-xl">
             <div className="text-right">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block leading-tight">
+              <span className="text-[9px] font-bold text-blue-200 uppercase tracking-wider block leading-tight">
                 Hora Oficial (VE)
               </span>
-              <span className="font-mono text-xs font-bold text-slate-800">
+              <span className="font-mono text-xs font-black text-white">
                 {horaVE}
               </span>
             </div>
-            <div className="h-5 w-px bg-slate-200"></div>
+            <div className="h-5 w-px bg-blue-800"></div>
             <div>
               {turnoActivo === 'MAÑANA' && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-400 text-blue-950 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-blue-950"></span>
                   Turno Mañana Abierto
                 </span>
               )}
               {turnoActivo === 'TARDE' && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-sky-50 text-sky-800 border border-sky-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-sky-300 text-blue-950 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-blue-950"></span>
                   Turno Tarde Abierto
                 </span>
               )}
               {!turnoActivo && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-blue-950 text-blue-200 border border-blue-800">
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
                   Fuera de Horario
                 </span>
               )}
@@ -102,7 +102,7 @@ export default function Navbar() {
               <span>☀️</span>
               <span>Reporte Mañana</span>
               {turnoActivo === 'MAÑANA' && (
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                <span className="bg-amber-400 text-blue-950 text-[10px] font-black px-1.5 py-0.2 rounded">
                   ACTIVO
                 </span>
               )}
@@ -113,13 +113,13 @@ export default function Navbar() {
               <span>🌙</span>
               <span>Reporte en la Tarde</span>
               {turnoActivo === 'TARDE' && (
-                <span className="bg-sky-100 text-sky-800 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                <span className="bg-sky-400 text-blue-950 text-[10px] font-black px-1.5 py-0.2 rounded">
                   ACTIVO
                 </span>
               )}
             </NavLink>
 
-            <div className="h-5 w-px bg-slate-200 mx-1"></div>
+            <div className="h-5 w-px bg-blue-800 mx-1"></div>
 
             {/* Login / Dashboard */}
             {isAuthenticated ? (
@@ -127,10 +127,10 @@ export default function Navbar() {
                 <NavLink
                   to="/dashboard"
                   className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                       isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                        ? 'bg-white text-blue-900 shadow-sm'
+                        : 'bg-blue-800 text-white hover:bg-blue-700'
                     }`
                   }
                 >
@@ -140,7 +140,7 @@ export default function Navbar() {
                 <button
                   onClick={handleCerrarSesion}
                   title="Cerrar Sesión"
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-medium border border-slate-200 transition"
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-950 hover:bg-red-800 text-blue-200 hover:text-white text-xs font-bold transition"
                 >
                   Salir
                 </button>
@@ -149,10 +149,10 @@ export default function Navbar() {
               <NavLink
                 to="/login"
                 className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  `flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black transition ${
                     isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                      ? 'bg-white text-blue-900 shadow-md ring-2 ring-white/50'
+                      : 'bg-white text-blue-900 hover:bg-blue-50 shadow-sm'
                   }`
                 }
               >
@@ -167,7 +167,7 @@ export default function Navbar() {
             <button
               onClick={() => setMenuAbierto(!menuAbierto)}
               aria-label="Abrir Menú"
-              className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 focus:outline-none"
+              className="p-2 rounded-lg bg-blue-800 text-white hover:bg-blue-700 focus:outline-none"
             >
               {menuAbierto ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,10 +184,10 @@ export default function Navbar() {
 
         {/* Desplegable Móvil */}
         {menuAbierto && (
-          <div className="md:hidden pt-3 pb-2 border-t border-slate-200 mt-2 space-y-1.5">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mb-2 flex items-center justify-between text-xs">
-              <span className="text-slate-500 font-medium">Hora Oficial (VE):</span>
-              <span className="font-mono font-bold text-slate-800">{horaVE}</span>
+          <div className="md:hidden pt-3 pb-2 border-t border-blue-800 mt-2 space-y-1.5">
+            <div className="bg-blue-950 rounded-lg p-2.5 mb-2 flex items-center justify-between text-xs">
+              <span className="text-blue-200 font-medium">Hora Oficial (VE):</span>
+              <span className="font-mono font-black text-white">{horaVE}</span>
             </div>
 
             <NavLink
@@ -198,11 +198,11 @@ export default function Navbar() {
               <span>☀️</span>
               <span className="flex-1">Reporte Mañana</span>
               {turnoActivo === 'MAÑANA' ? (
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                <span className="bg-amber-400 text-blue-950 text-[10px] font-black px-2 py-0.5 rounded">
                   ACTIVO
                 </span>
               ) : (
-                <span className="text-[10px] text-slate-400 font-mono">07:00-12:00</span>
+                <span className="text-[10px] text-blue-200 font-mono">07:00-12:00</span>
               )}
             </NavLink>
 
@@ -214,21 +214,21 @@ export default function Navbar() {
               <span>🌙</span>
               <span className="flex-1">Reporte en la Tarde</span>
               {turnoActivo === 'TARDE' ? (
-                <span className="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded">
+                <span className="bg-sky-400 text-blue-950 text-[10px] font-black px-2 py-0.5 rounded">
                   ACTIVO
                 </span>
               ) : (
-                <span className="text-[10px] text-slate-400 font-mono">13:00-22:00</span>
+                <span className="text-[10px] text-blue-200 font-mono">13:00-22:00</span>
               )}
             </NavLink>
 
-            <div className="border-t border-slate-200 pt-2">
+            <div className="border-t border-blue-800 pt-2">
               {isAuthenticated ? (
                 <div className="flex gap-2">
                   <NavLink
                     to="/dashboard"
                     onClick={() => setMenuAbierto(false)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-white text-blue-900"
                   >
                     <span>📊</span>
                     <span>Panel Admin</span>
@@ -238,7 +238,7 @@ export default function Navbar() {
                       setMenuAbierto(false);
                       handleCerrarSesion();
                     }}
-                    className="px-3 py-2 rounded-lg bg-slate-100 text-rose-700 text-xs font-semibold border border-slate-200"
+                    className="px-3 py-2 rounded-lg bg-blue-950 text-white text-xs font-bold"
                   >
                     Salir
                   </button>
@@ -247,7 +247,7 @@ export default function Navbar() {
                 <NavLink
                   to="/login"
                   onClick={() => setMenuAbierto(false)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200"
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black bg-white text-blue-900"
                 >
                   <span>🔐</span>
                   <span>Login</span>

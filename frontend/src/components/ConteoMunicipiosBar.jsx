@@ -32,15 +32,15 @@ export default function ConteoMunicipiosBar() {
   }, []);
 
   return (
-    <div className="bg-slate-50 border-b border-slate-200 text-slate-700">
+    <div className="bg-slate-950 border-b border-blue-950 text-white">
       <div className="max-w-7xl mx-auto px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-2.5">
         {/* Resumen Principal */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
             Registrados Hoy:
           </span>
-          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold px-2.5 py-0.5 rounded-full font-mono">
+          <span className="bg-blue-700 text-white text-xs font-bold px-2.5 py-0.5 rounded-full font-mono">
             {cargando ? '...' : `${dataConteo.total_general} Instituciones`}
           </span>
         </div>
@@ -56,8 +56,8 @@ export default function ConteoMunicipiosBar() {
                     key={item.municipio}
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-colors ${
                       tieneReportes
-                        ? 'bg-sky-50 border-sky-200 text-sky-900 font-semibold'
-                        : 'bg-white border-slate-200 text-slate-500'
+                        ? 'bg-blue-800 border-blue-600 text-white font-bold'
+                        : 'bg-slate-900 border-slate-800 text-slate-400'
                     }`}
                     title={`${item.municipio}: ${item.total} reportados hoy (${item.manana} Mañana / ${item.tarde} Tarde)`}
                   >
@@ -67,8 +67,8 @@ export default function ConteoMunicipiosBar() {
                     <span
                       className={`font-mono font-bold px-1.5 py-0.2 rounded text-[11px] ${
                         tieneReportes
-                          ? 'bg-sky-200 text-sky-900'
-                          : 'bg-slate-100 text-slate-600'
+                          ? 'bg-white text-blue-950'
+                          : 'bg-slate-800 text-slate-400'
                       }`}
                     >
                       {item.total}
