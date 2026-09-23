@@ -70,49 +70,53 @@ export default function Dashboard() {
   }, [filtros, page, pestanaActiva]);
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      {/* Barra de Navegación Superior */}
-      <header className="bg-blue-950 text-white px-6 py-4 border-b border-blue-900 shadow-sm">
+    <div className="min-h-screen bg-mesh-blue flex flex-col">
+      {/* Sub-Cabecera de Administración con Perfil */}
+      <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-slate-950 text-white px-6 py-4 border-b border-blue-500/20 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-400 text-blue-950 font-black rounded-xl flex items-center justify-center text-xl shadow-sm">
-              🏫
+            <div className="w-10 h-10 rounded-xl bg-blue-600/40 border border-blue-400/40 text-white flex items-center justify-center text-xl shadow-inner">
+              📊
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-lg tracking-tight">SISEDGUA</span>
-                <span className="text-[10px] bg-blue-900 text-blue-200 px-2 py-0.5 rounded-full font-bold uppercase">
-                  Zona Educativa Guárico
+                <span className="font-black text-base tracking-tight text-white">
+                  Panel Central de Control
+                </span>
+                <span className="text-[10px] bg-white text-blue-950 px-2 py-0.5 rounded-full font-black uppercase shadow-xs">
+                  Administrador
                 </span>
               </div>
-              <p className="text-xs text-blue-300">Panel Administrativo Central</p>
+              <p className="text-xs text-blue-200/80">
+                Consolidación y auditoría de asistencia de los 15 municipios de Guárico
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <span className="text-xs font-bold block">{admin?.nombre || 'Administrador'}</span>
+              <span className="text-xs font-bold block text-white">{admin?.nombre || 'Administrador'}</span>
               <span className="text-[11px] text-blue-300 block">{admin?.email}</span>
             </div>
             <button
               onClick={logout}
-              className="bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-bold py-2 px-3.5 rounded-xl transition cursor-pointer"
+              className="bg-slate-900 hover:bg-rose-950/70 text-slate-300 hover:text-rose-200 border border-slate-800 hover:border-rose-800 text-xs font-bold py-2 px-3.5 rounded-xl transition cursor-pointer"
             >
               Cerrar Sesión
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Selector de Pestañas */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 flex gap-6 overflow-x-auto">
+      {/* Selector de Pestañas Moderno en Tonos Azul y Blanco */}
+      <div className="bg-white border-b border-blue-100 shadow-xs">
+        <div className="max-w-7xl mx-auto px-6 flex gap-3 overflow-x-auto py-2.5">
           <button
             onClick={() => setPestanaActiva('estadisticas')}
-            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 whitespace-nowrap transition cursor-pointer ${
+            className={`py-2.5 px-4 text-xs font-black uppercase tracking-wider flex items-center gap-2 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
               pestanaActiva === 'estadisticas'
-                ? 'border-blue-900 text-blue-950'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-md shadow-blue-600/25'
+                : 'text-slate-600 hover:text-blue-950 hover:bg-blue-50/70'
             }`}
           >
             <span>📊</span> Tablero Estadístico & Reportes
@@ -120,10 +124,10 @@ export default function Dashboard() {
 
           <button
             onClick={() => setPestanaActiva('municipios')}
-            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 whitespace-nowrap transition cursor-pointer ${
+            className={`py-2.5 px-4 text-xs font-black uppercase tracking-wider flex items-center gap-2 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
               pestanaActiva === 'municipios'
-                ? 'border-blue-900 text-blue-950'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-md shadow-blue-600/25'
+                : 'text-slate-600 hover:text-blue-950 hover:bg-blue-50/70'
             }`}
           >
             <span>🏛️</span> Matrícula y Personal Máximo por Municipio
@@ -131,10 +135,10 @@ export default function Dashboard() {
 
           <button
             onClick={() => setPestanaActiva('instituciones')}
-            className={`py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 whitespace-nowrap transition cursor-pointer ${
+            className={`py-2.5 px-4 text-xs font-black uppercase tracking-wider flex items-center gap-2 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
               pestanaActiva === 'instituciones'
-                ? 'border-blue-900 text-blue-950'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-md shadow-blue-600/25'
+                : 'text-slate-600 hover:text-blue-950 hover:bg-blue-50/70'
             }`}
           >
             <span>🏫</span> Catálogo Escolar de Instituciones
@@ -152,35 +156,41 @@ export default function Dashboard() {
         ) : (
           /* Pestaña: Métricas, Gráficas, Filtros y Tabla */
           <>
-            {/* Barra de Filtros */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-wrap gap-4 items-end justify-between">
+            {/* Barra de Filtros en Blanco Puro con Acentos Azules */}
+            <div className="bg-white rounded-3xl shadow-sm border border-blue-100 p-5 sm:p-6 flex flex-wrap gap-4 items-end justify-between">
               <div className="flex flex-wrap gap-3 items-end">
                 <div>
-                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Fecha Desde</label>
+                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block mb-1.5">
+                    Fecha Desde
+                  </label>
                   <input
                     type="date"
                     value={filtros.desde}
                     onChange={(e) => { setFiltros((prev) => ({ ...prev, desde: e.target.value })); setPage(1); }}
-                    className="border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-900 outline-none bg-slate-50"
+                    className="border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Fecha Hasta</label>
+                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block mb-1.5">
+                    Fecha Hasta
+                  </label>
                   <input
                     type="date"
                     value={filtros.hasta}
                     onChange={(e) => { setFiltros((prev) => ({ ...prev, hasta: e.target.value })); setPage(1); }}
-                    className="border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-900 outline-none bg-slate-50"
+                    className="border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Turno</label>
+                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block mb-1.5">
+                    Turno
+                  </label>
                   <select
                     value={filtros.turno}
                     onChange={(e) => { setFiltros((prev) => ({ ...prev, turno: e.target.value })); setPage(1); }}
-                    className="border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-900 outline-none bg-slate-50"
+                    className="border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
                   >
                     <option value="">Todos los Turnos</option>
                     <option value="MAÑANA">☀️ Turno Mañana</option>
@@ -189,11 +199,13 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Municipio</label>
+                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block mb-1.5">
+                    Municipio
+                  </label>
                   <select
                     value={filtros.municipio}
                     onChange={(e) => { setFiltros((prev) => ({ ...prev, municipio: e.target.value })); setPage(1); }}
-                    className="border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-900 outline-none bg-slate-50"
+                    className="border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
                   >
                     <option value="">Todos los Municipios</option>
                     {MUNICIPIOS.map((m) => (
@@ -213,7 +225,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatsCard
                   icon="📋"
-                  label="Total Instituciones Reportadas"
+                  label="Instituciones Reportadas"
                   value={stats.total_reportes || 0}
                   subtext="Muestra Activa"
                   color="blue"
@@ -234,7 +246,7 @@ export default function Dashboard() {
                 />
                 <StatsCard
                   icon="📊"
-                  label="Tasa de Asistencia Global"
+                  label="Tasa Global Asistencia"
                   value={`${stats.pct_asistencia || 0}%`}
                   subtext="Rendimiento"
                   color="amber"
@@ -245,9 +257,9 @@ export default function Dashboard() {
             {/* Gráficos Recharts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Gráfico de Barras: Asistencia por Municipio */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+              <div className="bg-white rounded-3xl shadow-sm border border-blue-100 p-6">
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <span>📍</span> Asistencia Estudiantil por Municipio
+                  <span className="p-1 rounded bg-blue-50 text-blue-600">📍</span> Asistencia Estudiantil por Municipio
                 </h3>
                 <div className="h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -255,19 +267,19 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                       <XAxis dataKey="municipio" tick={{ fontSize: 10, fill: '#64748B' }} angle={-35} textAnchor="end" height={60} />
                       <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
-                      <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '12px' }} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', border: '1px solid #BFDBFE', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                      <Bar dataKey="matricula_asistente" name="Asistentes" fill="#1E3A8A" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="matricula_inasistente" name="Inasistentes" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="matricula_asistente" name="Asistentes" fill="#2563EB" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="matricula_inasistente" name="Inasistentes" fill="#EF4444" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Gráfico de Líneas: Tendencia Temporal */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+              <div className="bg-white rounded-3xl shadow-sm border border-blue-100 p-6">
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <span>📈</span> Tendencia Diaria de Participación
+                  <span className="p-1 rounded bg-blue-50 text-blue-600">📈</span> Tendencia Diaria de Participación
                 </h3>
                 <div className="h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -275,9 +287,9 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                       <XAxis dataKey="fecha" tick={{ fontSize: 10, fill: '#64748B' }} />
                       <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
-                      <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '12px' }} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', border: '1px solid #BFDBFE', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                      <Line type="monotone" dataKey="asistente" name="Est. Asistentes" stroke="#1E3A8A" strokeWidth={2.5} dot={{ r: 3 }} />
+                      <Line type="monotone" dataKey="asistente" name="Est. Asistentes" stroke="#2563EB" strokeWidth={3} dot={{ r: 4, fill: '#1D4ED8' }} />
                       <Line type="monotone" dataKey="inasistente" name="Est. Inasistentes" stroke="#EF4444" strokeWidth={2.5} dot={{ r: 3 }} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -286,30 +298,32 @@ export default function Dashboard() {
             </div>
 
             {/* Tabla Detallada con Paginación */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                  <span>📑</span> Registros Detallados de Asistencia ({totalReportes})
+            <div className="bg-white rounded-3xl shadow-sm border border-blue-100 overflow-hidden">
+              <div className="p-5 sm:p-6 border-b border-blue-100 flex items-center justify-between">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span className="p-1 rounded bg-blue-50 text-blue-600">📑</span> Registros Detallados de Asistencia ({totalReportes})
                 </h3>
-                <span className="text-xs text-slate-500">Ordenados por hora de registro</span>
+                <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+                  Orden cronológico
+                </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-blue-950 text-white uppercase text-[10px] tracking-wider">
+                  <thead className="bg-gradient-to-r from-slate-950 via-blue-950 to-blue-900 text-white uppercase text-[10px] tracking-wider font-black">
                     <tr>
-                      <th className="px-4 py-3">Turno</th>
-                      <th className="px-4 py-3">Fecha</th>
-                      <th className="px-4 py-3">Municipio</th>
-                      <th className="px-4 py-3">Institución</th>
-                      <th className="px-4 py-3">Director(a)</th>
-                      <th className="px-4 py-3 text-center">Est. Asist.</th>
-                      <th className="px-4 py-3 text-center">Est. Inasist.</th>
-                      <th className="px-4 py-3 text-center">Hora Registro</th>
-                      <th className="px-4 py-3">Observaciones</th>
+                      <th className="px-4 py-3.5">Turno</th>
+                      <th className="px-4 py-3.5">Fecha</th>
+                      <th className="px-4 py-3.5">Municipio</th>
+                      <th className="px-4 py-3.5">Institución</th>
+                      <th className="px-4 py-3.5">Director(a)</th>
+                      <th className="px-4 py-3.5 text-center">Est. Asist.</th>
+                      <th className="px-4 py-3.5 text-center">Est. Inasist.</th>
+                      <th className="px-4 py-3.5 text-center">Hora Registro</th>
+                      <th className="px-4 py-3.5">Observaciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody className="divide-y divide-slate-100">
                     {reportesData.length > 0 ? (
                       reportesData.map((rep) => (
                         <tr key={rep.id} className="hover:bg-slate-50/80 transition">

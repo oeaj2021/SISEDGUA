@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { login } from '../services/api';
 
@@ -26,22 +27,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Luces de fondo decorativas */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="min-h-screen bg-mesh-blue flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Luces de fondo decorativas en tonos azules */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-10 w-full max-w-md border border-slate-100 relative z-10">
+      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-950/15 p-8 sm:p-10 w-full max-w-md border border-blue-100/90 relative z-10 animate-fade-in">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-950 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg shadow-blue-900/30">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-800 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg shadow-blue-600/30 border border-blue-400/40">
             🏫
           </div>
-          <span className="text-[11px] font-black tracking-widest text-amber-600 uppercase block mb-1">
+          <span className="text-[11px] font-black tracking-widest text-blue-600 uppercase block mb-1">
             Zona Educativa del Estado Guárico
           </span>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">SISEDGUA</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">SISEDGUA</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Plataforma de Consolidación y Estadísticas de Asistencia Escolar
+            Panel de Acceso para Coordinadores y Autoridades
           </p>
         </div>
 
@@ -56,7 +57,7 @@ export default function Login() {
               placeholder="admin@sisedgua.ve"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 bg-slate-50 focus:bg-white transition"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15 bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
             />
           </div>
 
@@ -70,7 +71,7 @@ export default function Login() {
               placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 bg-slate-50 focus:bg-white transition"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15 bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
             />
           </div>
 
@@ -84,7 +85,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={cargando}
-            className="w-full bg-blue-950 hover:bg-blue-900 text-white font-bold py-3.5 px-4 rounded-xl shadow-md shadow-blue-950/20 transition-all text-sm disabled:opacity-50 cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white font-black py-4 px-4 rounded-2xl shadow-xl shadow-blue-600/30 hover:shadow-2xl hover:shadow-blue-600/40 transition-all duration-200 text-sm disabled:opacity-50 cursor-pointer active:scale-[0.98]"
           >
             {cargando ? 'Verificando credenciales...' : 'Ingresar al Dashboard'}
           </button>
@@ -92,10 +93,10 @@ export default function Login() {
 
         <div className="mt-8 pt-6 border-t border-slate-100 text-center">
           <p className="text-[11px] text-slate-400">
-            ¿Deseas llenar un reporte? Accede a los formularios públicos:{' '}
-            <a href="/manana" className="text-blue-700 font-bold hover:underline">Mañana</a>
+            ¿Deseas registrar un reporte diario?{' '}
+            <Link to="/manana" className="text-blue-600 font-bold hover:underline">Mañana</Link>
             {' · '}
-            <a href="/tarde" className="text-blue-700 font-bold hover:underline">Tarde</a>
+            <Link to="/tarde" className="text-blue-600 font-bold hover:underline">Tarde</Link>
           </p>
         </div>
       </div>

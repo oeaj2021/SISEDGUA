@@ -209,12 +209,12 @@ export default function GestionCapacidadMunicipios() {
       </div>
 
       {/* Tabla de Matrícula Máxima por Municipio */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-blue-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-blue-950 text-white uppercase text-[10px] tracking-wider">
+            <thead className="bg-gradient-to-r from-slate-950 via-blue-950 to-blue-900 text-white uppercase text-[10px] tracking-wider font-black">
               <tr>
-                <th className="px-4 py-3">Municipio</th>
+                <th className="px-4 py-3.5">Municipio</th>
                 <th className="px-4 py-3">Turno</th>
                 <th className="px-4 py-3 text-center">Matrícula Máxima</th>
                 <th className="px-4 py-3 text-center">Docentes Máximos</th>

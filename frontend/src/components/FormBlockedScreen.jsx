@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * Pantalla de bloqueo mostrada cuando el formulario se encuentra fuera de horario de servicio.
+ * Pantalla informativa de bloqueo mostrada cuando el formulario se encuentra fuera de horario legal.
  * Turno Mañana: 07:00 a 12:00
  * Turno Tarde:  13:00 a 22:00
  */
@@ -30,7 +30,6 @@ export default function FormBlockedScreen({ turno, horaApertura, horaCierre }) {
 
       let targetMs = aperturaMs;
       if (veDate.getTime() > aperturaMs) {
-        // Si ya pasó la hora de apertura hoy, apuntar al día siguiente
         targetMs = aperturaMs + 24 * 60 * 60 * 1000;
       }
 
@@ -51,37 +50,39 @@ export default function FormBlockedScreen({ turno, horaApertura, horaCierre }) {
   const cierreTexto = esManana ? '12:00 PM' : '10:00 PM';
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 ${esManana ? 'bg-amber-50' : 'bg-slate-100'}`}>
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 max-w-lg w-full text-center">
-        <div className="text-6xl mb-4 animate-bounce">
+    <div className="min-h-screen bg-mesh-blue flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Luces sutiles de fondo */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl shadow-blue-950/10 border border-blue-100 p-8 sm:p-10 max-w-lg w-full text-center relative z-10">
+        <div className="w-20 h-20 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center text-4xl mx-auto mb-4 border border-blue-100 shadow-inner">
           {esManana ? '🌅' : '🌙'}
         </div>
 
-        <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold mb-4 uppercase tracking-wider ${
-          esManana ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'
-        }`}>
+        <div className="inline-block px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200 mb-3 shadow-sm">
           Turno {turno} — Fuera de Horario
         </div>
 
-        <h1 className="text-2xl font-black text-slate-800 mb-2">
+        <h1 className="text-2xl font-black text-slate-900 mb-2">
           Recepción de Reportes Inactiva
         </h1>
 
         <p className="text-slate-600 text-sm mb-6 leading-relaxed">
           El sistema para el <strong>Turno {turno}</strong> recibe información únicamente en el intervalo oficial establecido de{' '}
-          <span className="font-semibold text-slate-900">{aperturaTexto}</span> a{' '}
-          <span className="font-semibold text-slate-900">{cierreTexto}</span> (Hora legal de la República Bolivariana de Venezuela).
+          <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded">{aperturaTexto}</span> a{' '}
+          <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded">{cierreTexto}</span> (Hora legal de la República Bolivariana de Venezuela).
         </p>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-            <span className="text-xs font-semibold text-slate-500 uppercase block mb-1">Hora Actual (VE)</span>
-            <span className="text-xl font-mono font-bold text-slate-800">{horaActual || '--:--:--'}</span>
+        <div className="grid grid-cols-2 gap-3.5 mb-6">
+          <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4">
+            <span className="text-[10px] font-black text-slate-500 uppercase block mb-1">Hora Actual (VE)</span>
+            <span className="text-lg font-mono font-black text-slate-900">{horaActual || '--:--:--'}</span>
           </div>
 
-          <div className={`border rounded-xl p-3 ${esManana ? 'bg-amber-50/70 border-amber-200' : 'bg-blue-50/70 border-blue-200'}`}>
-            <span className="text-xs font-semibold text-slate-500 uppercase block mb-1">Próxima Apertura</span>
-            <span className={`text-xl font-mono font-bold ${esManana ? 'text-amber-800' : 'text-blue-900'}`}>
+          <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4">
+            <span className="text-[10px] font-black text-blue-700 uppercase block mb-1">Próxima Apertura</span>
+            <span className="text-lg font-mono font-black text-blue-800">
               {countdown || 'Calculando...'}
             </span>
           </div>
