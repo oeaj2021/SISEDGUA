@@ -27,28 +27,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-mesh-blue flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Luces de fondo decorativas en tonos azules */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
-      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-950/15 p-8 sm:p-10 w-full max-w-md border border-blue-100/90 relative z-10 animate-fade-in">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-800 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg shadow-blue-600/30 border border-blue-400/40">
+          <div className="w-14 h-14 bg-blue-50 text-blue-700 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-blue-200 shadow-xs">
             🏫
           </div>
-          <span className="text-[11px] font-black tracking-widest text-blue-600 uppercase block mb-1">
-            Zona Educativa del Estado Guárico
+          <span className="text-[11px] font-bold tracking-wider text-blue-700 uppercase block mb-1">
+            Centro Desarrollo de la Calidad Educativa Guárico
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">SISEDGUA</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">SISEDGUA</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Panel de Acceso para Coordinadores y Autoridades
+            Acceso Administrativo y Auditoría
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Correo Institucional
             </label>
             <input
@@ -57,12 +53,12 @@ export default function Login() {
               placeholder="admin@sisedgua.ve"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15 bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
+              className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 bg-white text-slate-800"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
               Contraseña de Acceso
             </label>
             <input
@@ -71,32 +67,32 @@ export default function Login() {
               placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15 bg-slate-50/50 focus:bg-white text-slate-800 font-medium transition"
+              className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 bg-white text-slate-800"
             />
           </div>
 
           {error && (
             <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs px-4 py-3 rounded-xl flex items-center gap-2">
               <span>⚠️</span>
-              <span>{error}</span>
+              <span className="font-medium">{error}</span>
             </div>
           )}
 
           <button
             type="submit"
             disabled={cargando}
-            className="w-full bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white font-black py-4 px-4 rounded-2xl shadow-xl shadow-blue-600/30 hover:shadow-2xl hover:shadow-blue-600/40 transition-all duration-200 text-sm disabled:opacity-50 cursor-pointer active:scale-[0.98]"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-xs transition-colors text-sm disabled:opacity-50 cursor-pointer"
           >
             {cargando ? 'Verificando credenciales...' : 'Ingresar al Dashboard'}
           </button>
         </form>
 
         <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-slate-500">
             ¿Deseas registrar un reporte diario?{' '}
-            <Link to="/manana" className="text-blue-600 font-bold hover:underline">Mañana</Link>
+            <Link to="/manana" className="text-blue-600 font-semibold hover:underline">Mañana</Link>
             {' · '}
-            <Link to="/tarde" className="text-blue-600 font-bold hover:underline">Tarde</Link>
+            <Link to="/tarde" className="text-blue-600 font-semibold hover:underline">Tarde</Link>
           </p>
         </div>
       </div>

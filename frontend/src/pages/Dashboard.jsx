@@ -70,37 +70,37 @@ export default function Dashboard() {
   }, [filtros, page, pestanaActiva]);
 
   return (
-    <div className="min-h-screen bg-mesh-blue flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Sub-Cabecera de Administración con Perfil */}
-      <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-slate-950 text-white px-6 py-4 border-b border-blue-500/20 shadow-md">
+      <div className="bg-white border-b border-slate-200 px-6 py-3.5 shadow-xs">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/40 border border-blue-400/40 text-white flex items-center justify-center text-xl shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-xl shadow-xs">
               📊
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-base tracking-tight text-white">
+                <span className="font-bold text-base tracking-tight text-slate-900">
                   Panel Central de Control
                 </span>
-                <span className="text-[10px] bg-white text-blue-950 px-2 py-0.5 rounded-full font-black uppercase shadow-xs">
+                <span className="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md font-semibold uppercase">
                   Administrador
                 </span>
               </div>
-              <p className="text-xs text-blue-200/80">
-                Consolidación y auditoría de asistencia de los 15 municipios de Guárico
+              <p className="text-xs text-slate-500">
+                Centro Desarrollo de la Calidad Educativa Guárico · Auditoría de 15 Municipios
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <span className="text-xs font-bold block text-white">{admin?.nombre || 'Administrador'}</span>
-              <span className="text-[11px] text-blue-300 block">{admin?.email}</span>
+              <span className="text-xs font-semibold block text-slate-800">{admin?.nombre || 'Administrador'}</span>
+              <span className="text-[11px] text-slate-400 block">{admin?.email}</span>
             </div>
             <button
               onClick={logout}
-              className="bg-slate-900 hover:bg-rose-950/70 text-slate-300 hover:text-rose-200 border border-slate-800 hover:border-rose-800 text-xs font-bold py-2 px-3.5 rounded-xl transition cursor-pointer"
+              className="bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 text-xs font-medium py-1.5 px-3 rounded-lg transition cursor-pointer"
             >
               Cerrar Sesión
             </button>
@@ -108,15 +108,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Selector de Pestañas Moderno en Tonos Azul y Blanco */}
-      <div className="bg-white border-b border-blue-100 shadow-xs">
-        <div className="max-w-7xl mx-auto px-6 flex gap-3 overflow-x-auto py-2.5">
+      {/* Selector de Pestañas Sobrio y Profesional */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 flex gap-2 overflow-x-auto py-2">
           <button
             onClick={() => setPestanaActiva('estadisticas')}
-            className={`py-2.5 px-4 text-xs font-black uppercase tracking-wider flex items-center gap-2 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
               pestanaActiva === 'estadisticas'
-                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-md shadow-blue-600/25'
-                : 'text-slate-600 hover:text-blue-950 hover:bg-blue-50/70'
+                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
             }`}
           >
             <span>📊</span> Tablero Estadístico & Reportes
@@ -124,10 +124,10 @@ export default function Dashboard() {
 
           <button
             onClick={() => setPestanaActiva('municipios')}
-            className={`py-2.5 px-4 text-xs font-black uppercase tracking-wider flex items-center gap-2 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
               pestanaActiva === 'municipios'
-                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-md shadow-blue-600/25'
-                : 'text-slate-600 hover:text-blue-950 hover:bg-blue-50/70'
+                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
             }`}
           >
             <span>🏛️</span> Matrícula y Personal Máximo por Municipio
@@ -135,10 +135,10 @@ export default function Dashboard() {
 
           <button
             onClick={() => setPestanaActiva('instituciones')}
-            className={`py-2.5 px-4 text-xs font-black uppercase tracking-wider flex items-center gap-2 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
+            className={`py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
               pestanaActiva === 'instituciones'
-                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-md shadow-blue-600/25'
-                : 'text-slate-600 hover:text-blue-950 hover:bg-blue-50/70'
+                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
             }`}
           >
             <span>🏫</span> Catálogo Escolar de Instituciones
@@ -310,7 +310,7 @@ export default function Dashboard() {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-gradient-to-r from-slate-950 via-blue-950 to-blue-900 text-white uppercase text-[10px] tracking-wider font-black">
+                  <thead className="bg-slate-100 text-slate-700 border-b border-slate-200 uppercase text-[10px] tracking-wider font-semibold">
                     <tr>
                       <th className="px-4 py-3.5">Turno</th>
                       <th className="px-4 py-3.5">Fecha</th>

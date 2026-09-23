@@ -135,7 +135,7 @@ exports.exportExcel = async (req, res) => {
     });
 
     const wb = new ExcelJS.Workbook();
-    wb.creator = 'SISEDGUA - Zona Educativa Guárico';
+    wb.creator = 'SISEDGUA - Centro Desarrollo de la Calidad Educativa Guárico';
     wb.created = new Date();
 
     // 1. Hoja Consolidada General

@@ -254,12 +254,12 @@ export default function GestionInstituciones() {
       </div>
 
       {/* Tabla de Instituciones con Selección Múltiple */}
-      <div className="bg-white rounded-3xl shadow-sm border border-blue-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-gradient-to-r from-slate-950 via-blue-950 to-blue-900 text-white uppercase text-[10px] tracking-wider font-black">
+            <thead className="bg-slate-100 text-slate-700 border-b border-slate-200 uppercase text-[10px] tracking-wider font-semibold">
               <tr>
-                <th className="px-3 py-3.5 w-10 text-center">
+                <th className="px-3 py-3 w-10 text-center">
                   <input
                     type="checkbox"
                     checked={instituciones.length > 0 && seleccionados.length === instituciones.length}

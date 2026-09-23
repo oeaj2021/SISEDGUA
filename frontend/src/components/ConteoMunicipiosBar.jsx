@@ -32,18 +32,15 @@ export default function ConteoMunicipiosBar() {
   }, []);
 
   return (
-    <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-slate-950 border-b border-blue-500/20 text-white">
+    <div className="bg-slate-50 border-b border-slate-200 text-slate-700">
       <div className="max-w-7xl mx-auto px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-2.5">
         {/* Resumen Principal */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <span className="flex h-2.5 w-2.5 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-          </span>
-          <span className="text-[11px] font-black uppercase tracking-wider text-blue-200">
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
             Registrados Hoy:
           </span>
-          <span className="bg-white text-blue-950 text-xs font-black px-3 py-0.5 rounded-full shadow-sm font-mono tracking-tight">
+          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold px-2.5 py-0.5 rounded-full font-mono">
             {cargando ? '...' : `${dataConteo.total_general} Instituciones`}
           </span>
         </div>
@@ -57,21 +54,21 @@ export default function ConteoMunicipiosBar() {
                 return (
                   <div
                     key={item.municipio}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-colors ${
                       tieneReportes
-                        ? 'bg-blue-600/90 border-blue-400 text-white font-bold shadow-sm shadow-blue-500/25 scale-[1.02]'
-                        : 'bg-blue-950/40 border-blue-900/40 text-blue-300/70 hover:border-blue-700/60'
+                        ? 'bg-sky-50 border-sky-200 text-sky-900 font-semibold'
+                        : 'bg-white border-slate-200 text-slate-500'
                     }`}
                     title={`${item.municipio}: ${item.total} reportados hoy (${item.manana} Mañana / ${item.tarde} Tarde)`}
                   >
-                    <span className="uppercase tracking-tight text-[10px] font-semibold">
+                    <span className="uppercase tracking-tight text-[10px]">
                       {item.municipio}:
                     </span>
                     <span
-                      className={`font-mono font-black px-1.5 py-0.2 rounded text-[11px] ${
+                      className={`font-mono font-bold px-1.5 py-0.2 rounded text-[11px] ${
                         tieneReportes
-                          ? 'bg-white text-blue-900 shadow-sm'
-                          : 'bg-blue-900/60 text-blue-200'
+                          ? 'bg-sky-200 text-sky-900'
+                          : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {item.total}
@@ -80,7 +77,7 @@ export default function ConteoMunicipiosBar() {
                 );
               })
             ) : (
-              <span className="text-xs text-blue-300/70 italic">
+              <span className="text-xs text-slate-400 italic">
                 {cargando ? 'Cargando conteo por municipio...' : 'Esperando primeros reportes del día'}
               </span>
             )}
