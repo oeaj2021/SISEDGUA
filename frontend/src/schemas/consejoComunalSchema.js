@@ -22,6 +22,18 @@ export const consejoComunalSchema = z
         /^(0412|0414|0424|0416|0426)\d{7}$/,
         'Ingrese un número válido con prefijo venezolano (0412, 0414, 0424, 0416, 0426) y 7 dígitos'
       ),
+    genero: z.enum(['Hombre', 'Mujer'], {
+      message: 'Seleccione su género (Hombre o Mujer)'
+    }),
+    edad: z
+      .preprocess(
+        (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+        z
+          .number({ message: 'Ingrese una edad válida' })
+          .int('La edad debe ser un número entero')
+          .min(15, 'La edad mínima permitida es 15 años')
+          .max(100, 'La edad máxima permitida es 100 años')
+      ),
     tipo_personal: z.enum(
       [
         'Docente',
@@ -32,10 +44,15 @@ export const consejoComunalSchema = z
         'Otro'
       ],
       {
-        errorMap: () => ({ message: 'Seleccione el tipo de personal' })
+        message: 'Seleccione el tipo de personal'
       }
     ),
     tipo_personal_otro: z.string().trim().optional(),
+    institucion_educativa: z
+      .string()
+      .trim()
+      .min(3, 'Indique la institución educativa donde labora')
+      .max(200, 'Máximo 200 caracteres'),
     municipio: z.string().min(1, 'Seleccione un municipio del Estado Guárico'),
     parroquia: z.string().min(1, 'Seleccione una parroquia'),
     comunidad: z

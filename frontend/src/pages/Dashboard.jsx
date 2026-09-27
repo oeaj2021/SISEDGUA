@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, ResponsiveContainer
@@ -88,7 +89,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Centro Desarrollo de la Calidad Educativa Guárico · Auditoría de 15 Municipios
+                Sala Situacional CDCE ESTADAL GUÁRICO · Auditoría de 15 Municipios
               </p>
             </div>
           </div>
@@ -143,6 +144,22 @@ export default function Dashboard() {
           >
             <span>🏫</span> Catálogo Escolar de Instituciones
           </button>
+
+          <div className="h-6 w-px bg-slate-200 self-center mx-1"></div>
+
+          <Link
+            to="/consejos-comunales/registros"
+            className="py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-transparent transition-colors"
+          >
+            <span>🏛️</span> Consejos Comunales
+          </Link>
+
+          <Link
+            to="/consejos-comunales/registros?tab=padron"
+            className="py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-transparent transition-colors"
+          >
+            <span>👥</span> Padrón Electoral
+          </Link>
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { MUNICIPIOS_GUARICO, COMITES_CONSEJO_COMUNAL } from '../utils/guaricoData';
 import { consejoComunalSchema } from '../schemas/consejoComunalSchema';
-import { consultarPadron } from '../services/api';
+import { consultarPadron, getInstituciones } from '../services/api';
 
 export default function RegistroConsejoComunal() {
   const INITIAL_STATE = {
@@ -10,8 +10,11 @@ export default function RegistroConsejoComunal() {
     cedula: '',
     nombres_apellidos: '',
     telefono: '',
+    genero: '',
+    edad: '',
     tipo_personal: '',
     tipo_personal_otro: '',
+    institucion_educativa: '',
     municipio: '',
     parroquia: '',
     comunidad: '',
@@ -28,10 +31,31 @@ export default function RegistroConsejoComunal() {
   const [submitting, setSubmitting] = useState(false);
   const [modalSuccess, setModalSuccess] = useState(null);
   const [serverError, setServerError] = useState('');
+  const [instituciones, setInstituciones] = useState([]);
 
   // Estados para autocompletado inteligente mediante Padrón Institucional
   const [cedulaBuscando, setCedulaBuscando] = useState(false);
   const [cedulaVerificada, setCedulaVerificada] = useState(null);
+
+  // Cargar catálogo de instituciones activas (filtradas por municipio si se ha seleccionado)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchInstituciones = async () => {
+      try {
+        const params = form.municipio ? { municipio: form.municipio } : {};
+        const res = await getInstituciones(params);
+        if (isMounted) {
+          setInstituciones(Array.isArray(res.data) ? res.data : []);
+        }
+      } catch (err) {
+        console.warn('Error al cargar catálogo de instituciones:', err.message);
+      }
+    };
+    fetchInstituciones();
+    return () => {
+      isMounted = false;
+    };
+  }, [form.municipio]);
 
   useEffect(() => {
     const cleanCed = form.cedula.trim();
@@ -134,10 +158,13 @@ export default function RegistroConsejoComunal() {
       cedula: form.cedula.trim(),
       nombres_apellidos: form.nombres_apellidos.trim(),
       telefono: form.telefono.trim(),
+      genero: form.genero,
+      edad: form.edad ? parseInt(form.edad, 10) : null,
       tipo_personal: {
         valor: form.tipo_personal,
         detalle: form.tipo_personal === 'Otro' ? form.tipo_personal_otro.trim() : null
       },
+      institucion_educativa: form.institucion_educativa.trim(),
       municipio: form.municipio,
       parroquia: form.parroquia,
       comunidad: form.comunidad.trim(),
@@ -180,7 +207,7 @@ export default function RegistroConsejoComunal() {
         <header className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 mb-6 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-full uppercase tracking-wider mb-3">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-            CDCE ESTADAL GUÁRICO
+            Sala Situacional CDCE ESTADAL GUÁRICO
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
             Sector Educativo Participa en Consejos Comunales
@@ -316,6 +343,46 @@ export default function RegistroConsejoComunal() {
                 )}
               </div>
 
+              {/* Género */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Género <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="genero"
+                  value={form.genero}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 font-medium ${
+                    errors.genero ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="">-- Seleccione su género --</option>
+                  <option value="Hombre">Hombre</option>
+                  <option value="Mujer">Mujer</option>
+                </select>
+                {errors.genero && <p className="text-xs text-red-600 mt-1 font-medium">{errors.genero}</p>}
+              </div>
+
+              {/* Edad */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Edad (Años) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="edad"
+                  min={15}
+                  max={100}
+                  placeholder="Ej: 38"
+                  value={form.edad}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 font-semibold ${
+                    errors.edad ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                />
+                {errors.edad && <p className="text-xs text-red-600 mt-1 font-medium">{errors.edad}</p>}
+              </div>
+
               {/* Tipo de Personal */}
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
@@ -361,6 +428,39 @@ export default function RegistroConsejoComunal() {
                       <p className="text-xs text-red-600 mt-1 font-medium">{errors.tipo_personal_otro}</p>
                     )}
                   </div>
+                )}
+              </div>
+
+              {/* Institución Educativa donde labora */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Institución Educativa donde labora <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="institucion_educativa"
+                  list="instituciones-catalogo"
+                  placeholder="Ej: U.E. República del Brasil..."
+                  value={form.institucion_educativa}
+                  onChange={handleChange}
+                  autoComplete="off"
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
+                    errors.institucion_educativa ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                />
+                <datalist id="instituciones-catalogo">
+                  {instituciones.map((inst) => (
+                    <option key={inst.id} value={inst.nombre}>
+                      {inst.codigo ? `${inst.codigo} - ${inst.nombre}` : inst.nombre} {inst.municipio ? `(${inst.municipio})` : ''}
+                    </option>
+                  ))}
+                </datalist>
+                <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
+                  <span>💡</span>
+                  <span>Seleccione una institución del catálogo sugerido o escriba manualmente el nombre si no se encuentra listada.</span>
+                </p>
+                {errors.institucion_educativa && (
+                  <p className="text-xs text-red-600 mt-1 font-medium">{errors.institucion_educativa}</p>
                 )}
               </div>
             </div>
@@ -639,10 +739,20 @@ export default function RegistroConsejoComunal() {
                   <span className="font-semibold text-slate-900">{modalSuccess.nombres_apellidos}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="font-bold text-slate-500">Género / Edad:</span>
+                  <span className="font-semibold text-slate-900">{modalSuccess.genero} · {modalSuccess.edad} años</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                   <span className="font-bold text-slate-500">Tipo de Personal:</span>
                   <span className="font-semibold text-slate-900">
                     {modalSuccess.tipo_personal.valor}
                     {modalSuccess.tipo_personal.detalle ? ` (${modalSuccess.tipo_personal.detalle})` : ''}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="font-bold text-slate-500">Institución Educativa:</span>
+                  <span className="font-semibold text-slate-900 text-right">
+                    {modalSuccess.institucion_educativa}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/60 pb-1.5">

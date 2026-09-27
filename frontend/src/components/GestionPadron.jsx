@@ -23,6 +23,7 @@ export default function GestionPadron() {
   const [padron, setPadron] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Filtros de búsqueda
   const [search, setSearch] = useState('');
@@ -50,6 +51,7 @@ export default function GestionPadron() {
 
   const fetchPadron = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await getPadron({
         page,
@@ -58,11 +60,15 @@ export default function GestionPadron() {
         municipio,
         tipo_personal: tipoPersonal
       });
-      setPadron(res.data.data || []);
-      setTotalPages(res.data.totalPages || 1);
-      setTotalCount(res.data.total || 0);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const total = Array.isArray(res.data) ? res.data.length : (res.data?.total ?? data.length);
+      const pages = res.data?.totalPages || Math.ceil(total / 15) || 1;
+      setPadron(data);
+      setTotalPages(pages);
+      setTotalCount(total);
     } catch (err) {
       console.error('Error al listar padrón:', err);
+      setError(err.response?.data?.error || 'Error al conectar con la base de datos del padrón institucional.');
     } finally {
       setLoading(false);
     }
@@ -147,6 +153,10 @@ export default function GestionPadron() {
       {/* Subcabecera de Navegación de Padrón */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-50 text-blue-800 text-[10px] font-bold rounded-full uppercase tracking-wider mb-1.5">
+            <span>🏛️</span>
+            Sala Situacional CDCE ESTADAL GUÁRICO
+          </div>
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
             <span>📋</span> Padrón Institucional del Personal Educativo
           </h2>
@@ -339,8 +349,8 @@ export default function GestionPadron() {
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Seleccione si aplica...</option>
-                  {MUNICIPIOS_GUARICO.map((m) => (
-                    <option key={m.nombre} value={m.nombre}>
+                  {Object.entries(MUNICIPIOS_GUARICO).map(([key, m]) => (
+                    <option key={key} value={m.nombre}>
                       {m.nombre}
                     </option>
                   ))}
@@ -472,8 +482,8 @@ export default function GestionPadron() {
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todos los municipios</option>
-                {MUNICIPIOS_GUARICO.map((m) => (
-                  <option key={m.nombre} value={m.nombre}>
+                {Object.entries(MUNICIPIOS_GUARICO).map(([key, m]) => (
+                  <option key={key} value={m.nombre}>
                     {m.nombre}
                   </option>
                 ))}
@@ -500,6 +510,44 @@ export default function GestionPadron() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-xs text-red-700">
+              <span className="flex items-center gap-1.5">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchPadron();
+                  fetchStats();
+                }}
+                className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition"
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
+
+          {/* Subcabecera Tabla Padrón */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs font-semibold text-slate-500">
+              Registros en lista: <strong className="text-slate-900">{padron.length}</strong> de <strong className="text-slate-900">{totalCount}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                fetchPadron();
+                fetchStats();
+              }}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50"
+            >
+              <span className={loading ? 'animate-spin' : ''}>🔄</span>
+              <span>Actualizar Padrón</span>
+            </button>
           </div>
 
           {/* Tabla Padrón */}

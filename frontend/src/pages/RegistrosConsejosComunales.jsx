@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
@@ -10,26 +10,50 @@ import {
 } from '../services/api';
 import { MUNICIPIOS_GUARICO } from '../utils/guaricoData';
 import GestionPadron from '../components/GestionPadron';
+import GestionInstituciones from '../components/GestionInstituciones';
 
 export default function RegistrosConsejosComunales() {
-  const [tabActiva, setTabActiva] = useState('registros'); // 'registros' | 'estadisticas' | 'padron'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [tabActiva, setTabActiva] = useState(
+    ['registros', 'estadisticas', 'padron', 'instituciones'].includes(tabParam) ? tabParam : 'registros'
+  );
   const [registros, setRegistros] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Sincronizar tab desde URL si cambia externamente (ej. navegación de Navbar)
+  useEffect(() => {
+    if (tabParam && ['registros', 'estadisticas', 'padron', 'instituciones'].includes(tabParam)) {
+      setTabActiva(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (nuevaTab) => {
+    setTabActiva(nuevaTab);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set('tab', nuevaTab);
+      return p;
+    });
+  };
 
   // Filtros
   const [search, setSearch] = useState('');
   const [municipio, setMunicipio] = useState('');
   const [tipoPersonal, setTipoPersonal] = useState('');
   const [formaParteComite, setFormaParteComite] = useState('');
+  const [genero, setGenero] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
 
   const fetchRegistros = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await getConsejosComunales({
         page,
@@ -37,17 +61,22 @@ export default function RegistrosConsejosComunales() {
         search,
         municipio,
         tipo_personal: tipoPersonal,
-        forma_parte_comite: formaParteComite
+        forma_parte_comite: formaParteComite,
+        genero: genero || undefined
       });
-      setRegistros(res.data.data || []);
-      setTotalPages(res.data.totalPages || 1);
-      setTotalRegistros(res.data.total || 0);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const total = Array.isArray(res.data) ? res.data.length : (res.data?.total ?? data.length);
+      const pages = res.data?.totalPages || Math.ceil(total / 15) || 1;
+      setRegistros(data);
+      setTotalPages(pages);
+      setTotalRegistros(total);
     } catch (err) {
       console.error('Error al cargar registros:', err);
+      setError(err.response?.data?.error || 'Error al conectar con el servidor o cargar los registros.');
     } finally {
       setLoading(false);
     }
-  }, [page, search, municipio, tipoPersonal, formaParteComite]);
+  }, [page, search, municipio, tipoPersonal, formaParteComite, genero]);
 
   const fetchStats = async () => {
     try {
@@ -73,16 +102,31 @@ export default function RegistrosConsejosComunales() {
         municipio: municipio || undefined,
         tipo_personal: tipoPersonal || undefined
       });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+
+      let blobData = res.data;
+      if (blobData instanceof Blob && blobData.type && blobData.type.includes('application/json')) {
+        const text = await blobData.text();
+        const json = JSON.parse(text);
+        throw new Error(json.error || 'Error al generar reporte Excel');
+      }
+
+      const blob = blobData instanceof Blob
+        ? new Blob([blobData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        : new Blob([blobData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `Registros_Consejos_Comunales_${Date.now()}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      setTimeout(() => {
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }, 200);
     } catch (err) {
       console.error('Error al exportar Excel:', err);
-      alert('Error al generar la descarga del archivo Excel.');
+      alert('Error al descargar el archivo Excel: ' + (err.response?.data?.error || err.message || 'Error de conexión'));
     } finally {
       setExporting(false);
     }
@@ -93,6 +137,7 @@ export default function RegistrosConsejosComunales() {
     setMunicipio('');
     setTipoPersonal('');
     setFormaParteComite('');
+    setGenero('');
     setPage(1);
   };
 
@@ -104,7 +149,7 @@ export default function RegistrosConsejosComunales() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2">
               <span>🏛️</span>
-              CDCE ESTADAL GUÁRICO
+              Sala Situacional CDCE ESTADAL GUÁRICO
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Registros: Sector Educativo en Consejos Comunales
@@ -116,8 +161,21 @@ export default function RegistrosConsejosComunales() {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => {
+                fetchRegistros();
+                fetchStats();
+              }}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50"
+              title="Recargar listado y estadísticas"
+            >
+              <span className={loading ? 'animate-spin' : ''}>🔄</span>
+              <span>Actualizar Lista</span>
+            </button>
+
+            <button
               onClick={handleExportExcel}
-              disabled={exporting || totalRegistros === 0}
+              disabled={exporting}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-xs cursor-pointer"
             >
               <span>📊</span>
@@ -137,7 +195,7 @@ export default function RegistrosConsejosComunales() {
         {/* Barra de Pestañas de Navegación del Módulo */}
         <div className="flex flex-wrap gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
           <button
-            onClick={() => setTabActiva('registros')}
+            onClick={() => handleTabChange('registros')}
             className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
               tabActiva === 'registros'
                 ? 'bg-blue-600 text-white shadow-xs'
@@ -149,7 +207,7 @@ export default function RegistrosConsejosComunales() {
           </button>
 
           <button
-            onClick={() => setTabActiva('estadisticas')}
+            onClick={() => handleTabChange('estadisticas')}
             className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
               tabActiva === 'estadisticas'
                 ? 'bg-blue-600 text-white shadow-xs'
@@ -161,7 +219,7 @@ export default function RegistrosConsejosComunales() {
           </button>
 
           <button
-            onClick={() => setTabActiva('padron')}
+            onClick={() => handleTabChange('padron')}
             className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
               tabActiva === 'padron'
                 ? 'bg-blue-600 text-white shadow-xs'
@@ -170,6 +228,18 @@ export default function RegistrosConsejosComunales() {
           >
             <span>👥</span>
             <span>Gestión de Padrón (Cédulas)</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('instituciones')}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
+              tabActiva === 'instituciones'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>🏫</span>
+            <span>Catálogo de Instituciones</span>
           </button>
         </div>
 
@@ -217,7 +287,7 @@ export default function RegistrosConsejosComunales() {
 
         {/* Barra de Filtros */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {/* Buscador */}
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
@@ -280,6 +350,25 @@ export default function RegistrosConsejosComunales() {
               </select>
             </div>
 
+            {/* Género */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                Género
+              </label>
+              <select
+                value={genero}
+                onChange={(e) => {
+                  setGenero(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              >
+                <option value="">Todos</option>
+                <option value="Hombre">Hombre</option>
+                <option value="Mujer">Mujer</option>
+              </select>
+            </div>
+
             {/* En Comité */}
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
@@ -300,18 +389,36 @@ export default function RegistrosConsejosComunales() {
             </div>
           </div>
 
-          {(search || municipio || tipoPersonal || formaParteComite) && (
+          {(search || municipio || tipoPersonal || formaParteComite || genero) && (
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs font-bold text-rose-600 hover:text-rose-800 transition"
+                className="text-xs font-bold text-rose-600 hover:text-rose-800 transition cursor-pointer"
               >
                 Limpiar Filtros
               </button>
             </div>
           )}
         </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between text-red-700 text-xs shadow-xs">
+            <span className="flex items-center gap-2 font-medium">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </span>
+            <button
+              onClick={() => {
+                fetchRegistros();
+                fetchStats();
+              }}
+              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
 
         {/* Tabla de Registros */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -320,6 +427,19 @@ export default function RegistrosConsejosComunales() {
               Mostrando <span className="text-slate-900 font-extrabold">{registros.length}</span> de{' '}
               <span className="text-slate-900 font-extrabold">{totalRegistros}</span> registros encontrados
             </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                fetchRegistros();
+                fetchStats();
+              }}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50"
+            >
+              <span className={loading ? 'animate-spin' : ''}>🔄</span>
+              <span>Actualizar Lista</span>
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -328,6 +448,7 @@ export default function RegistrosConsejosComunales() {
                 <tr>
                   <th className="py-3.5 px-4">Cédula</th>
                   <th className="py-3.5 px-4">Nombres y Apellidos</th>
+                  <th className="py-3.5 px-4">Género / Edad</th>
                   <th className="py-3.5 px-4">Personal</th>
                   <th className="py-3.5 px-4">Municipio / Parroquia</th>
                   <th className="py-3.5 px-4">Comunidad</th>
@@ -338,7 +459,7 @@ export default function RegistrosConsejosComunales() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-500 font-medium">
+                    <td colSpan={8} className="py-12 text-center text-slate-500 font-medium">
                       <div className="inline-flex items-center gap-2">
                         <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -350,7 +471,7 @@ export default function RegistrosConsejosComunales() {
                   </tr>
                 ) : registros.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-500">
+                    <td colSpan={8} className="py-12 text-center text-slate-500">
                       No se encontraron registros con los filtros seleccionados.
                     </td>
                   </tr>
@@ -364,10 +485,19 @@ export default function RegistrosConsejosComunales() {
                         {item.nombres_apellidos}
                         <span className="block text-[11px] text-slate-400 font-normal">{item.telefono}</span>
                       </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="font-semibold text-slate-900 block">{item.genero || 'N/A'}</span>
+                        <span className="text-[11px] text-slate-500 font-medium">{item.edad ? `${item.edad} años` : 'N/A'}</span>
+                      </td>
                       <td className="py-3.5 px-4 text-slate-700">
                         <span className="font-medium text-slate-900">{item.tipo_personal}</span>
                         {item.tipo_personal_detalle && (
                           <span className="block text-[11px] text-blue-600">({item.tipo_personal_detalle})</span>
+                        )}
+                        {item.institucion_educativa && (
+                          <span className="block text-[11px] text-slate-500 font-medium truncate max-w-[200px]" title={item.institucion_educativa}>
+                            🏫 {item.institucion_educativa}
+                          </span>
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">
@@ -601,6 +731,10 @@ export default function RegistrosConsejosComunales() {
 
     {/* PESTAÑA 3: GESTIÓN DE PADRÓN INSTITUCIONAL */}
     {tabActiva === 'padron' && <GestionPadron />}
+
+    {/* PESTAÑA 4: CATÁLOGO DE INSTITUCIONES */}
+    {tabActiva === 'instituciones' && <GestionInstituciones />}
+
         {selectedItem && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 animate-fadeIn">
@@ -633,11 +767,25 @@ export default function RegistrosConsejosComunales() {
                       <span className="text-slate-400 font-bold block text-[11px]">Teléfono:</span>
                       <span className="font-bold text-slate-900">{selectedItem.telefono}</span>
                     </div>
+                    <div>
+                      <span className="text-slate-400 font-bold block text-[11px]">Género:</span>
+                      <span className="font-bold text-slate-900">{selectedItem.genero || 'No especificado'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-bold block text-[11px]">Edad:</span>
+                      <span className="font-bold text-slate-900">{selectedItem.edad ? `${selectedItem.edad} años` : 'No especificada'}</span>
+                    </div>
                     <div className="col-span-2">
                       <span className="text-slate-400 font-bold block text-[11px]">Tipo de Personal:</span>
                       <span className="font-semibold text-slate-900">
                         {selectedItem.tipo_personal}
                         {selectedItem.tipo_personal_detalle ? ` (${selectedItem.tipo_personal_detalle})` : ''}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-slate-400 font-bold block text-[11px]">Institución Educativa:</span>
+                      <span className="font-semibold text-slate-900">
+                        {selectedItem.institucion_educativa || 'No especificada'}
                       </span>
                     </div>
                   </div>

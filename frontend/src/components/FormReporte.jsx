@@ -167,7 +167,7 @@ export default function FormReporte({ turno }) {
           </span>
 
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-xs">
-            CENTRO DESARROLLO DE LA CALIDAD EDUCATIVA GUÁRICO
+            SALA SITUACIONAL CDCE ESTADAL GUÁRICO
           </h1>
 
           <p className="text-blue-100 text-xs sm:text-sm mt-1">

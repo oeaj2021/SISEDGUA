@@ -135,7 +135,8 @@ exports.exportExcel = async (req, res) => {
     });
 
     const wb = new ExcelJS.Workbook();
-    wb.creator = 'SISEDGUA - Centro Desarrollo de la Calidad Educativa Guárico';
+    wb.creator = 'Sala Situacional CDCE ESTADAL GUÁRICO';
+    wb.title = 'Reporte Asistencia - Sala Situacional CDCE ESTADAL GUÁRICO';
     wb.created = new Date();
 
     // 1. Hoja Consolidada General

@@ -58,7 +58,7 @@ export default function Navbar() {
                   Consejos Comunales
                 </span>
                 <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wider">
-                  CDCE ESTADAL GUÁRICO
+                  Sala Situacional CDCE ESTADAL GUÁRICO
                 </p>
               </div>
             </NavLink>
@@ -75,13 +75,25 @@ export default function Navbar() {
                     to="/consejos-comunales/registros"
                     className={({ isActive }) =>
                       `flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition ${
-                        isActive
+                        isActive && !location.search.includes('tab=padron')
                           ? 'bg-white text-blue-900 shadow-sm'
                           : 'text-blue-100 hover:bg-blue-800 hover:text-white'
                       }`
                     }
                   >
                     <span>📊 Registros</span>
+                  </NavLink>
+                  <NavLink
+                    to="/consejos-comunales/registros?tab=padron"
+                    className={() =>
+                      `flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition ${
+                        location.search.includes('tab=padron')
+                          ? 'bg-white text-blue-900 shadow-sm'
+                          : 'text-blue-100 hover:bg-blue-800 hover:text-white'
+                      }`
+                    }
+                  >
+                    <span>👥 Padrón</span>
                   </NavLink>
                   <button
                     onClick={handleCerrarSesion}
@@ -146,6 +158,13 @@ export default function Navbar() {
                   >
                     <span>📊 Registros</span>
                   </NavLink>
+                  <NavLink
+                    to="/consejos-comunales/registros?tab=padron"
+                    onClick={() => setMenuAbierto(false)}
+                    className={navLinkClass}
+                  >
+                    <span>👥 Gestión Padrón</span>
+                  </NavLink>
                   <button
                     onClick={() => {
                       setMenuAbierto(false);
@@ -197,7 +216,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-[11px] text-blue-100 font-medium hidden md:block">
-                CDCE ESTADAL GUÁRICO · Control de Asistencia
+                Sala Situacional CDCE ESTADAL GUÁRICO · Control de Asistencia
               </p>
             </div>
           </NavLink>
@@ -267,7 +286,7 @@ export default function Navbar() {
                 <NavLink
                   to="/dashboard"
                   className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                       isActive
                         ? 'bg-white text-blue-900 shadow-sm'
                         : 'bg-blue-800 text-white hover:bg-blue-700'
@@ -278,10 +297,38 @@ export default function Navbar() {
                   <span>Panel Admin</span>
                 </NavLink>
 
+                <NavLink
+                  to="/consejos-comunales/registros"
+                  className={({ isActive }) =>
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      isActive && !location.search.includes('tab=padron')
+                        ? 'bg-white text-blue-900 shadow-sm'
+                        : 'bg-blue-800 text-white hover:bg-blue-700'
+                    }`
+                  }
+                >
+                  <span>🏛️</span>
+                  <span>Comunales</span>
+                </NavLink>
+
+                <NavLink
+                  to="/consejos-comunales/registros?tab=padron"
+                  className={() =>
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      location.search.includes('tab=padron')
+                        ? 'bg-white text-blue-900 shadow-sm'
+                        : 'bg-blue-800 text-white hover:bg-blue-700'
+                    }`
+                  }
+                >
+                  <span>👥</span>
+                  <span>Padrón</span>
+                </NavLink>
+
                 <button
                   onClick={handleCerrarSesion}
                   title="Cerrar Sesión"
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-950 hover:bg-red-800 text-blue-200 hover:text-white text-xs font-bold transition"
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-950 hover:bg-red-800 text-blue-200 hover:text-white text-xs font-bold transition cursor-pointer"
                 >
                   Salir
                 </button>
@@ -374,12 +421,28 @@ export default function Navbar() {
                     <span>📊</span>
                     <span>Panel Admin</span>
                   </NavLink>
+                  <NavLink
+                    to="/consejos-comunales/registros"
+                    onClick={() => setMenuAbierto(false)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-blue-800 text-white hover:bg-blue-700"
+                  >
+                    <span>🏛️</span>
+                    <span>Registros Comunales</span>
+                  </NavLink>
+                  <NavLink
+                    to="/consejos-comunales/registros?tab=padron"
+                    onClick={() => setMenuAbierto(false)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-blue-800 text-white hover:bg-blue-700"
+                  >
+                    <span>👥</span>
+                    <span>Gestión de Padrón</span>
+                  </NavLink>
                   <button
                     onClick={() => {
                       setMenuAbierto(false);
                       handleCerrarSesion();
                     }}
-                    className="w-full py-2 bg-blue-950 text-white text-xs font-bold rounded-lg"
+                    className="w-full py-2 bg-blue-950 text-white text-xs font-bold rounded-lg cursor-pointer"
                   >
                     Cerrar Sesión
                   </button>

@@ -37,7 +37,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-a68c7a75d1e8f02751941bb26ba5d1fe056b55b0301d40f7178ab4738cdec51a}
       DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@sisedgua.ve}
       DEFAULT_ADMIN_PASS: ${DEFAULT_ADMIN_PASS:-okmLIqlAFOWzIg@2026!}
-      DEFAULT_ADMIN_NAME: "Administrador CDCE ESTADAL GUÁRICO"
+      DEFAULT_ADMIN_NAME: "Administrador Sala Situacional CDCE ESTADAL GUÁRICO"
       TZ: America/Caracas
     depends_on:
       postgres:

@@ -8,10 +8,10 @@ router.post('/', ctrl.crearRegistro);
 // Métricas y estadísticas (Disponible para dashboard/admin)
 router.get('/stats', ctrl.obtenerEstadisticas);
 
+// Exportación oficial a Excel (Antes de '/' para evitar colisiones de ruta)
+router.get('/export/excel', auth, ctrl.exportarExcel);
+
 // Consulta y listado administrativo paginado
 router.get('/', auth, ctrl.listarRegistros);
-
-// Exportación oficial a Excel
-router.get('/export/excel', auth, ctrl.exportarExcel);
 
 module.exports = router;

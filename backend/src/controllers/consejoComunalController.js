@@ -26,7 +26,10 @@ exports.crearRegistro = async (req, res) => {
       cedula,
       nombres_apellidos,
       telefono,
+      genero,
+      edad,
       tipo_personal,
+      institucion_educativa,
       municipio,
       parroquia,
       comunidad,
@@ -61,6 +64,29 @@ exports.crearRegistro = async (req, res) => {
       return res.status(400).json({
         error: 'Teléfono inválido. Ingrese un prefijo venezolano (0412, 0414, 0424, 0416, 0426) con 7 dígitos.'
       });
+    }
+
+    // Validación de Género y Edad
+    let cleanGenero = null;
+    if (genero) {
+      const g = sanitizarTexto(genero);
+      if (!['Hombre', 'Mujer'].includes(g)) {
+        return res.status(400).json({ error: 'Género no válido. Debe seleccionar Hombre o Mujer.' });
+      }
+      cleanGenero = g;
+    } else {
+      return res.status(400).json({ error: 'El género es un campo obligatorio (Hombre o Mujer).' });
+    }
+
+    let cleanEdad = null;
+    if (edad !== undefined && edad !== null && edad !== '') {
+      const parsedEdad = parseInt(edad, 10);
+      if (isNaN(parsedEdad) || parsedEdad < 15 || parsedEdad > 100) {
+        return res.status(400).json({ error: 'La edad debe ser un número entero entre 15 y 100 años.' });
+      }
+      cleanEdad = parsedEdad;
+    } else {
+      return res.status(400).json({ error: 'La edad es un campo obligatorio.' });
     }
 
     // 2. Validación de Tipo de Personal
@@ -149,8 +175,11 @@ exports.crearRegistro = async (req, res) => {
       cedula: cleanCedula,
       nombres_apellidos: cleanNombres,
       telefono: cleanTelefono,
+      genero: cleanGenero,
+      edad: cleanEdad,
       tipo_personal: personalValor,
       tipo_personal_detalle: personalDetalle,
+      institucion_educativa: sanitizarTexto(institucion_educativa) || null,
       municipio: cleanMunicipio,
       parroquia: cleanParroquia,
       comunidad: cleanComunidad,
@@ -163,6 +192,19 @@ exports.crearRegistro = async (req, res) => {
       ip_registro: clientIp
     });
 
+    // 8. Sincronización en PadronPersonal (Padrón Electoral / Institucional)
+    try {
+      await PadronPersonal.upsert({
+        nacionalidad,
+        cedula: cleanCedula,
+        nombres_apellidos: cleanNombres,
+        tipo_personal: personalValor || 'Docente',
+        municipio: cleanMunicipio
+      });
+    } catch (padronErr) {
+      console.warn('Advertencia al sincronizar con PadronPersonal:', padronErr.message);
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Registro comunal institucional guardado exitosamente.',
@@ -171,6 +213,8 @@ exports.crearRegistro = async (req, res) => {
         nacionalidad: nuevoRegistro.nacionalidad,
         cedula: nuevoRegistro.cedula,
         nombres_apellidos: nuevoRegistro.nombres_apellidos,
+        genero: nuevoRegistro.genero,
+        edad: nuevoRegistro.edad,
         municipio: nuevoRegistro.municipio,
         parroquia: nuevoRegistro.parroquia,
         createdAt: nuevoRegistro.createdAt
@@ -212,12 +256,25 @@ exports.obtenerEstadisticas = async (req, res) => {
       order: [[sequelize.literal('total'), 'DESC']]
     });
 
+    const porGenero = await RegistroConsejoComunal.findAll({
+      attributes: [
+        'genero',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total']
+      ],
+      where: {
+        genero: { [Op.ne]: null }
+      },
+      group: ['genero'],
+      order: [[sequelize.literal('total'), 'DESC']]
+    });
+
     return res.json({
       totalRegistros,
       conComite,
       enAsambleas,
       porMunicipio,
-      porTipoPersonal
+      porTipoPersonal,
+      porGenero
     });
   } catch (error) {
     console.error('Error al obtener estadísticas comunales:', error);
@@ -237,10 +294,13 @@ exports.listarRegistros = async (req, res) => {
       search = '',
       municipio = '',
       tipo_personal = '',
-      forma_parte_comite = ''
+      forma_parte_comite = '',
+      genero = ''
     } = req.query;
 
-    const offset = (Math.max(1, parseInt(page, 10)) - 1) * parseInt(limit, 10);
+    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+    const parsedLimit = Math.max(1, parseInt(limit, 10) || 15);
+    const offset = (parsedPage - 1) * parsedLimit;
     const where = {};
 
     if (search && search.trim()) {
@@ -252,29 +312,33 @@ exports.listarRegistros = async (req, res) => {
       ];
     }
 
-    if (municipio && municipio.trim()) {
-      where.municipio = municipio.trim();
+    if (municipio && String(municipio).trim()) {
+      where.municipio = String(municipio).trim();
     }
 
-    if (tipo_personal && tipo_personal.trim()) {
-      where.tipo_personal = tipo_personal.trim();
+    if (tipo_personal && String(tipo_personal).trim()) {
+      where.tipo_personal = String(tipo_personal).trim();
     }
 
-    if (forma_parte_comite !== '') {
-      where.forma_parte_comite = forma_parte_comite === 'true' || forma_parte_comite === true;
+    if (genero && String(genero).trim()) {
+      where.genero = String(genero).trim();
+    }
+
+    if (forma_parte_comite !== undefined && forma_parte_comite !== null && String(forma_parte_comite).trim() !== '') {
+      where.forma_parte_comite = String(forma_parte_comite) === 'true';
     }
 
     const { count, rows } = await RegistroConsejoComunal.findAndCountAll({
       where,
-      limit: parseInt(limit, 10),
+      limit: parsedLimit,
       offset,
       order: [['createdAt', 'DESC']]
     });
 
     return res.json({
       total: count,
-      page: parseInt(page, 10),
-      totalPages: Math.ceil(count / parseInt(limit, 10)) || 1,
+      page: parsedPage,
+      totalPages: Math.ceil(count / parsedLimit) || 1,
       data: rows
     });
   } catch (error) {
@@ -289,18 +353,42 @@ exports.listarRegistros = async (req, res) => {
  */
 exports.exportarExcel = async (req, res) => {
   try {
-    const { municipio, tipo_personal } = req.query;
+    const { municipio, tipo_personal, search, genero, forma_parte_comite } = req.query;
     const where = {};
-    if (municipio) where.municipio = municipio;
-    if (tipo_personal) where.tipo_personal = tipo_personal;
+
+    if (search && search.trim()) {
+      const s = `%${search.trim()}%`;
+      where[Op.or] = [
+        { cedula: { [Op.iLike]: s } },
+        { nombres_apellidos: { [Op.iLike]: s } },
+        { comunidad: { [Op.iLike]: s } }
+      ];
+    }
+
+    if (municipio && String(municipio).trim()) {
+      where.municipio = String(municipio).trim();
+    }
+
+    if (tipo_personal && String(tipo_personal).trim()) {
+      where.tipo_personal = String(tipo_personal).trim();
+    }
+
+    if (genero && String(genero).trim()) {
+      where.genero = String(genero).trim();
+    }
+
+    if (forma_parte_comite !== undefined && forma_parte_comite !== null && String(forma_parte_comite).trim() !== '') {
+      where.forma_parte_comite = String(forma_parte_comite) === 'true';
+    }
 
     const registros = await RegistroConsejoComunal.findAll({
       where,
-      order: [['municipio', 'ASC'], ['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'SISEDGUA - CDCE ESTADAL GUÁRICO';
+    workbook.creator = 'Sala Situacional CDCE ESTADAL GUÁRICO';
+    workbook.title = 'Participación Comunal - Sala Situacional CDCE ESTADAL GUÁRICO';
     const worksheet = workbook.addWorksheet('Participación Comunal', {
       views: [{ showGridLines: true }]
     });
@@ -310,8 +398,11 @@ exports.exportarExcel = async (req, res) => {
       { header: 'Cédula', key: 'cedula', width: 14 },
       { header: 'Nombres y Apellidos', key: 'nombres_apellidos', width: 32 },
       { header: 'Teléfono', key: 'telefono', width: 16 },
+      { header: 'Género', key: 'genero', width: 14 },
+      { header: 'Edad', key: 'edad', width: 10 },
       { header: 'Tipo Personal', key: 'tipo_personal', width: 22 },
       { header: 'Detalle Personal', key: 'tipo_personal_detalle', width: 26 },
+      { header: 'Institución Educativa', key: 'institucion_educativa', width: 30 },
       { header: 'Municipio', key: 'municipio', width: 20 },
       { header: 'Parroquia', key: 'parroquia', width: 22 },
       { header: 'Comunidad / Sector', key: 'comunidad', width: 30 },
@@ -338,8 +429,11 @@ exports.exportarExcel = async (req, res) => {
         cedula: `${reg.nacionalidad}-${reg.cedula}`,
         nombres_apellidos: reg.nombres_apellidos,
         telefono: reg.telefono,
+        genero: reg.genero || 'N/A',
+        edad: reg.edad != null ? reg.edad : 'N/A',
         tipo_personal: reg.tipo_personal,
         tipo_personal_detalle: reg.tipo_personal_detalle || 'N/A',
+        institucion_educativa: reg.institucion_educativa || 'N/A',
         municipio: reg.municipio,
         parroquia: reg.parroquia,
         comunidad: reg.comunidad,
@@ -349,24 +443,19 @@ exports.exportarExcel = async (req, res) => {
         forma_parte_comite: reg.forma_parte_comite ? 'SÍ' : 'NO',
         comite: reg.comite || 'N/A',
         comite_detalle: reg.comite_detalle || 'N/A',
-        fecha: new Date(reg.createdAt).toLocaleDateString('es-VE')
+        fecha: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString('es-VE') : 'N/A'
       });
       row.alignment = { vertical: 'middle' };
     });
 
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=Reporte_Consejos_Comunales_Guarico_${Date.now()}.xlsx`
-    );
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="Reporte_Consejos_Comunales.xlsx"');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
-    await workbook.xlsx.write(res);
-    res.end();
+    const buffer = await workbook.xlsx.writeBuffer();
+    return res.send(buffer);
   } catch (error) {
     console.error('Error al exportar a Excel:', error);
-    res.status(500).json({ error: 'Error al generar reporte Excel' });
+    return res.status(500).json({ error: 'Error al generar reporte Excel' });
   }
 };

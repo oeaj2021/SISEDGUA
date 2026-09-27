@@ -1,7 +1,7 @@
 {
   "name": "sisedgua-backend",
   "version": "1.0.0",
-  "description": "Backend API para SISEDGUA - Zona Educativa Guárico",
+  "description": "Backend API para SISEDGUA - Sala Situacional CDCE ESTADAL GUÁRICO",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",

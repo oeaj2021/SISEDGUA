@@ -85,7 +85,7 @@ export default function FormBlockedScreen({ turno, horaApertura, horaCierre }) {
         </div>
 
         <div className="text-xs text-slate-400 border-t border-slate-100 pt-4 font-medium uppercase tracking-tight">
-          CENTRO DESARROLLO DE LA CALIDAD EDUCATIVA GUÁRICO · SISTEMA DE ASISTENCIA ESCOLAR 2026-2027
+          SALA SITUACIONAL CDCE ESTADAL GUÁRICO · SISTEMA DE ASISTENCIA ESCOLAR 2026-2027
         </div>
       </div>
     </div>

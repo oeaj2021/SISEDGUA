@@ -46,7 +46,7 @@ export default function Login() {
             {esComuc ? '🏛️' : '🏫'}
           </div>
           <span className="text-[11px] font-bold tracking-wider text-blue-700 uppercase block mb-1">
-            {esComuc ? 'Poder Popular & Educación Guárico' : 'Centro Desarrollo de la Calidad Educativa Guárico'}
+            Sala Situacional CDCE ESTADAL GUÁRICO
           </span>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             {esComuc ? 'Consejos Comunales' : 'SISEDGUA'}

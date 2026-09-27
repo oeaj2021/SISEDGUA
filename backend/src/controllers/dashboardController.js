@@ -1,4 +1,4 @@
-const { Reporte, sequelize } = require('../models');
+const { Reporte } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getStats = async (req, res) => {
@@ -22,46 +22,39 @@ exports.getStats = async (req, res) => {
       where.municipio = { [Op.contains]: [municipio.toUpperCase()] };
     }
 
-    const stats = await Reporte.findOne({
-      where,
-      attributes: [
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total_reportes'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('matricula_asistente')), 0), 'estudiantes_asistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('matricula_inasistente')), 0), 'estudiantes_inasistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('docentes_asistente')), 0), 'docentes_asistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('docentes_inasistente')), 0), 'docentes_inasistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('admin_asistente')), 0), 'admin_asistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('admin_inasistente')), 0), 'admin_inasistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('obrero_asistente')), 0), 'obrero_asistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('obrero_inasistente')), 0), 'obrero_inasistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('cocina_asistente')), 0), 'cocina_asistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('cocina_inasistente')), 0), 'cocina_inasistente']
-      ],
-      raw: true
-    });
+    const reportes = await Reporte.findAll({ where });
 
-    const total_reportes = parseInt(stats?.total_reportes || 0, 10);
-    const estudiantes_asistente = parseInt(stats?.estudiantes_asistente || 0, 10);
-    const estudiantes_inasistente = parseInt(stats?.estudiantes_inasistente || 0, 10);
+    const total_reportes = reportes.length;
+    const estudiantes_asistente = reportes.reduce((acc, r) => acc + (r.matricula_asistente || 0), 0);
+    const estudiantes_inasistente = reportes.reduce((acc, r) => acc + (r.matricula_inasistente || 0), 0);
     const total_matricula = estudiantes_asistente + estudiantes_inasistente;
 
     const pct_asistencia = total_matricula > 0
       ? ((estudiantes_asistente / total_matricula) * 100).toFixed(2)
       : '0.00';
 
+    const docentes_asistente = reportes.reduce((acc, r) => acc + (r.docentes_asistente || 0), 0);
+    const docentes_inasistente = reportes.reduce((acc, r) => acc + (r.docentes_inasistente || 0), 0);
+    const admin_asistente = reportes.reduce((acc, r) => acc + (r.admin_asistente || 0), 0);
+    const admin_inasistente = reportes.reduce((acc, r) => acc + (r.admin_inasistente || 0), 0);
+    const obrero_asistente = reportes.reduce((acc, r) => acc + (r.obrero_asistente || 0), 0);
+    const obrero_inasistente = reportes.reduce((acc, r) => acc + (r.obrero_inasistente || 0), 0);
+    const cocina_asistente = reportes.reduce((acc, r) => acc + (r.cocina_asistente || 0), 0);
+    const cocina_inasistente = reportes.reduce((acc, r) => acc + (r.cocina_inasistente || 0), 0);
+
     return res.json({
       total_reportes,
       estudiantes_asistente,
       estudiantes_inasistente,
       pct_asistencia,
-      docentes_asistente: parseInt(stats?.docentes_asistente || 0, 10),
-      docentes_inasistente: parseInt(stats?.docentes_inasistente || 0, 10),
-      admin_asistente: parseInt(stats?.admin_asistente || 0, 10),
-      admin_inasistente: parseInt(stats?.admin_inasistente || 0, 10),
-      obrero_asistente: parseInt(stats?.obrero_asistente || 0, 10),
-      obrero_inasistente: parseInt(stats?.obrero_inasistente || 0, 10),
-      cocina_asistente: parseInt(stats?.cocina_asistente || 0, 10),
-      cocina_inasistente: parseInt(stats?.cocina_inasistente || 0, 10)
+      docentes_asistente,
+      docentes_inasistente,
+      admin_asistente,
+      admin_inasistente,
+      obrero_asistente,
+      obrero_inasistente,
+      cocina_asistente,
+      cocina_inasistente
     });
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);
@@ -72,49 +65,41 @@ exports.getStats = async (req, res) => {
 exports.getPorMunicipio = async (req, res) => {
   try {
     const { desde, hasta, turno } = req.query;
-    const whereConditions = [];
-    const replacements = {};
+    const where = {};
 
     if (desde && hasta) {
-      whereConditions.push('fecha BETWEEN :desde AND :hasta');
-      replacements.desde = desde;
-      replacements.hasta = hasta;
-    } else if (desde) {
-      whereConditions.push('fecha >= :desde');
-      replacements.desde = desde;
-    } else if (hasta) {
-      whereConditions.push('fecha <= :hasta');
-      replacements.hasta = hasta;
+      where.fecha = { [Op.between]: [desde, hasta] };
     }
-
     if (turno && ['MAÑANA', 'TARDE'].includes(turno)) {
-      whereConditions.push('turno = :turno');
-      replacements.turno = turno;
+      where.turno = turno;
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const reportes = await Reporte.findAll({ where });
+    const acumulado = {};
 
-    const query = `
-      SELECT 
-        mun AS municipio,
-        COUNT(*)::INTEGER AS reportes,
-        COALESCE(SUM(matricula_asistente), 0)::INTEGER AS matricula_asistente,
-        COALESCE(SUM(matricula_inasistente), 0)::INTEGER AS matricula_inasistente,
-        COALESCE(SUM(docentes_asistente), 0)::INTEGER AS docentes_asistente,
-        COALESCE(SUM(docentes_inasistente), 0)::INTEGER AS docentes_inasistente
-      FROM reportes,
-      UNNEST(municipio) AS mun
-      ${whereClause}
-      GROUP BY mun
-      ORDER BY mun ASC;
-    `;
-
-    const results = await sequelize.query(query, {
-      replacements,
-      type: sequelize.QueryTypes.SELECT
+    reportes.forEach(r => {
+      if (Array.isArray(r.municipio)) {
+        r.municipio.forEach(mun => {
+          if (!acumulado[mun]) {
+            acumulado[mun] = {
+              municipio: mun,
+              reportes: 0,
+              matricula_asistente: 0,
+              matricula_inasistente: 0,
+              docentes_asistente: 0,
+              docentes_inasistente: 0
+            };
+          }
+          acumulado[mun].reportes += 1;
+          acumulado[mun].matricula_asistente += r.matricula_asistente || 0;
+          acumulado[mun].matricula_inasistente += r.matricula_inasistente || 0;
+          acumulado[mun].docentes_asistente += r.docentes_asistente || 0;
+          acumulado[mun].docentes_inasistente += r.docentes_inasistente || 0;
+        });
+      }
     });
 
-    return res.json(results);
+    return res.json(Object.values(acumulado));
   } catch (error) {
     console.error('Error en desglose por municipio:', error);
     return res.status(500).json({ error: 'Error al calcular datos por municipio' });
@@ -128,12 +113,7 @@ exports.getTendencia = async (req, res) => {
 
     if (desde && hasta) {
       where.fecha = { [Op.between]: [desde, hasta] };
-    } else if (desde) {
-      where.fecha = { [Op.gte]: desde };
-    } else if (hasta) {
-      where.fecha = { [Op.lte]: hasta };
     }
-
     if (turno && ['MAÑANA', 'TARDE'].includes(turno)) {
       where.turno = turno;
     }
@@ -143,25 +123,26 @@ exports.getTendencia = async (req, res) => {
 
     const reportes = await Reporte.findAll({
       where,
-      attributes: [
-        'fecha',
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('matricula_asistente')), 0), 'asistente'],
-        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('matricula_inasistente')), 0), 'inasistente'],
-        [sequelize.fn('COUNT', sequelize.col('id')), 'reportes']
-      ],
-      group: ['fecha'],
-      order: [['fecha', 'ASC']],
-      raw: true
+      order: [['fecha', 'ASC']]
     });
 
-    const formatted = reportes.map(r => ({
-      fecha: r.fecha,
-      asistente: parseInt(r.asistente || 0, 10),
-      inasistente: parseInt(r.inasistente || 0, 10),
-      reportes: parseInt(r.reportes || 0, 10)
-    }));
+    const dias = {};
+    reportes.forEach(r => {
+      const fecha = r.fecha;
+      if (!dias[fecha]) {
+        dias[fecha] = {
+          fecha,
+          asistente: 0,
+          inasistente: 0,
+          reportes: 0
+        };
+      }
+      dias[fecha].asistente += r.matricula_asistente || 0;
+      dias[fecha].inasistente += r.matricula_inasistente || 0;
+      dias[fecha].reportes += 1;
+    });
 
-    return res.json(formatted);
+    return res.json(Object.values(dias));
   } catch (error) {
     console.error('Error en cálculo de tendencia:', error);
     return res.status(500).json({ error: 'Error al calcular tendencia temporal' });

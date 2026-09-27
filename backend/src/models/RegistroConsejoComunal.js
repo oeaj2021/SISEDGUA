@@ -27,6 +27,15 @@ const RegistroConsejoComunal = sequelize.define('RegistroConsejoComunal', {
     type: DataTypes.STRING(25),
     allowNull: false
   },
+  genero: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    defaultValue: null
+  },
+  edad: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   tipo_personal: {
     type: DataTypes.STRING(100),
     allowNull: false
@@ -34,6 +43,11 @@ const RegistroConsejoComunal = sequelize.define('RegistroConsejoComunal', {
   tipo_personal_detalle: {
     type: DataTypes.STRING(150),
     allowNull: true
+  },
+  institucion_educativa: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    defaultValue: null
   },
   municipio: {
     type: DataTypes.STRING(100),

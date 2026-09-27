@@ -6,7 +6,7 @@ async function seedAdmin() {
     await syncDatabase();
     const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@sisedgua.ve';
     const adminPass = process.env.DEFAULT_ADMIN_PASS || 'Admin2026!';
-    const adminName = process.env.DEFAULT_ADMIN_NAME || 'Administrador CDCE ESTADAL GUÁRICO';
+    const adminName = process.env.DEFAULT_ADMIN_NAME || 'Administrador Sala Situacional CDCE ESTADAL GUÁRICO';
 
     const [admin, created] = await Admin.findOrCreate({
       where: { email: adminEmail },

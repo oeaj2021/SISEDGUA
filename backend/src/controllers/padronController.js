@@ -208,7 +208,7 @@ exports.listarPadron = async (req, res) => {
     }
 
     if (municipio && municipio.trim()) {
-      where.municipio = municipio.trim();
+      where.municipio = { [Op.iLike]: `%${municipio.trim()}%` };
     }
 
     if (tipo_personal && tipo_personal.trim()) {

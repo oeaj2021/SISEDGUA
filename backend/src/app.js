@@ -112,7 +112,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     app: 'SISEDGUA API',
-    institution: 'CDCE ESTADAL GUÁRICO',
+    institution: 'Sala Situacional CDCE ESTADAL GUÁRICO',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -124,7 +124,7 @@ const PORT = process.env.PORT || 3001;
 if (process.env.NODE_ENV !== 'test') {
   syncDatabase().then(() => {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 SISEDGUA Backend activo y blindado en el puerto ${PORT}`);
+      console.log(`🚀 SISEDGUA Backend activo y blindado en el puerto ${PORT} - Sala Situacional CDCE ESTADAL GUÁRICO`);
     });
   });
 }
