@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  sisedgua-backend-v2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sisedgua_backend_v2
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - CORS_ORIGIN=http://localhost:3001
+      - DB_HOST=sisedgua-postgres-v2
+      - DB_PORT=5432
+      - DB_NAME=sisedgua_v2
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_v2_secret
+    depends_on:
+      - sisedgua-postgres-v2
+
+  sisedgua-frontend-v2:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sisedgua_frontend_v2
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - sisedgua-backend-v2
+
+  sisedgua-postgres-v2:
+    image: postgres:15-alpine
+    container_name: sisedgua_postgres_v2
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=sisedgua_v2
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_v2_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - sisedgua_v2_data:/var/lib/postgresql/data
+
+volumes:
+  sisedgua_v2_data:
