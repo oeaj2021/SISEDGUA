@@ -7,7 +7,40 @@ exports.getAll = async (req, res) => {
     const where = { activo: true };
 
     if (municipio) {
-      where.municipio = municipio.toUpperCase();
+      const cleanMun = municipio.toUpperCase().trim();
+      if (cleanMun.includes('SANTA MARIA') || cleanMun.includes('IPIRE')) {
+        where.municipio = { [Op.in]: ['SANTA MARIA', 'SANTA MARIA DE IPIRE'] };
+      } else if (cleanMun.includes('ROSCIO')) {
+        where.municipio = 'ROSCIO';
+      } else if (cleanMun.includes('INFANTE')) {
+        where.municipio = 'INFANTE';
+      } else if (cleanMun.includes('MIRANDA')) {
+        where.municipio = 'MIRANDA';
+      } else if (cleanMun.includes('MONAGAS')) {
+        where.municipio = 'MONAGAS';
+      } else if (cleanMun.includes('MELLADO')) {
+        where.municipio = 'MELLADO';
+      } else if (cleanMun.includes('RIBAS')) {
+        where.municipio = 'RIBAS';
+      } else if (cleanMun.includes('RONDON')) {
+        where.municipio = 'RONDON';
+      } else if (cleanMun.includes('SOCORRO')) {
+        where.municipio = 'EL SOCORRO';
+      } else if (cleanMun.includes('CHAGUARAMAS')) {
+        where.municipio = 'CHAGUARAMAS';
+      } else if (cleanMun.includes('GUAYABAL')) {
+        where.municipio = 'GUAYABAL';
+      } else if (cleanMun.includes('CAMAGUAN')) {
+        where.municipio = 'CAMAGUAN';
+      } else if (cleanMun.includes('GUARIBE')) {
+        where.municipio = 'GUARIBE';
+      } else if (cleanMun.includes('ORTIZ')) {
+        where.municipio = 'ORTIZ';
+      } else if (cleanMun.includes('ZARAZA')) {
+        where.municipio = 'ZARAZA';
+      } else {
+        where.municipio = cleanMun;
+      }
     }
 
     if (turno && ['MAÑANA', 'TARDE'].includes(turno)) {

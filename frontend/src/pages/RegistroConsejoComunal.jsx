@@ -32,23 +32,34 @@ export default function RegistroConsejoComunal() {
   const [modalSuccess, setModalSuccess] = useState(null);
   const [serverError, setServerError] = useState('');
   const [instituciones, setInstituciones] = useState([]);
+  const [institucionesCargando, setInstitucionesCargando] = useState(false);
+  const [modoManualInstitucion, setModoManualInstitucion] = useState(false);
 
   // Estados para autocompletado inteligente mediante Padrón Institucional
   const [cedulaBuscando, setCedulaBuscando] = useState(false);
   const [cedulaVerificada, setCedulaVerificada] = useState(null);
 
-  // Cargar catálogo de instituciones activas (filtradas por municipio si se ha seleccionado)
+  // Cargar catálogo de instituciones activas (filtradas automáticamente por municipio)
   useEffect(() => {
     let isMounted = true;
     const fetchInstituciones = async () => {
+      setInstitucionesCargando(true);
       try {
         const params = form.municipio ? { municipio: form.municipio } : {};
         const res = await getInstituciones(params);
         if (isMounted) {
-          setInstituciones(Array.isArray(res.data) ? res.data : []);
+          const list = Array.isArray(res.data) ? res.data : [];
+          setInstituciones(list);
+          if (list.length === 0 && form.municipio) {
+            setModoManualInstitucion(true);
+          }
         }
       } catch (err) {
         console.warn('Error al cargar catálogo de instituciones:', err.message);
+      } finally {
+        if (isMounted) {
+          setInstitucionesCargando(false);
+        }
       }
     };
     fetchInstituciones();
@@ -432,32 +443,137 @@ export default function RegistroConsejoComunal() {
               </div>
 
               {/* Institución Educativa donde labora */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Institución Educativa donde labora <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="institucion_educativa"
-                  list="instituciones-catalogo"
-                  placeholder="Ej: U.E. República del Brasil..."
-                  value={form.institucion_educativa}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
-                    errors.institucion_educativa ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
-                  }`}
-                />
-                <datalist id="instituciones-catalogo">
-                  {instituciones.map((inst) => (
-                    <option key={inst.id} value={inst.nombre}>
-                      {inst.codigo ? `${inst.codigo} - ${inst.nombre}` : inst.nombre} {inst.municipio ? `(${inst.municipio})` : ''}
-                    </option>
-                  ))}
-                </datalist>
+              <div id="institucion-educativa-field" className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Institución Educativa donde labora <span className="text-red-500">*</span>
+                  </label>
+                  {form.municipio && (
+                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1 shadow-sm">
+                      <span>📍</span>
+                      <span>Filtrado por: <strong>{MUNICIPIOS_GUARICO[form.municipio]?.nombre || form.municipio}</strong> ({instituciones.length} planteles)</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Si no ha seleccionado municipio aún en la sección de dirección, mostrar banner de vinculación */}
+                {!form.municipio && (
+                  <div className="mb-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span>💡</span>
+                      <span>Seleccione su <strong>Municipio en la Sección 2 (Dirección)</strong> para filtrar automáticamente las instituciones donde labora:</span>
+                    </span>
+                    <select
+                      value={form.municipio}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setForm((prev) => ({ ...prev, municipio: val, parroquia: '' }));
+                        if (errors.municipio) setErrors((prev) => ({ ...prev, municipio: undefined }));
+                      }}
+                      className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-slate-800 outline-none cursor-pointer"
+                    >
+                      <option value="">-- Elegir Municipio ahora --</option>
+                      {Object.entries(MUNICIPIOS_GUARICO).map(([key, data]) => (
+                        <option key={key} value={key}>{data.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Selector de instituciones cuando hay municipio seleccionado */}
+                {form.municipio && !modoManualInstitucion && instituciones.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <select
+                        name="institucion_educativa"
+                        value={form.institucion_educativa}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '__OTRA__') {
+                            setModoManualInstitucion(true);
+                            setForm((prev) => ({ ...prev, institucion_educativa: '' }));
+                          } else {
+                            setForm((prev) => ({ ...prev, institucion_educativa: val }));
+                            if (errors.institucion_educativa) {
+                              setErrors((prev) => ({ ...prev, institucion_educativa: undefined }));
+                            }
+                          }
+                        }}
+                        disabled={institucionesCargando}
+                        className={`flex-1 px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 font-medium ${
+                          errors.institucion_educativa ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                        }`}
+                      >
+                        <option value="">
+                          {institucionesCargando
+                            ? 'Cargando planteles de la zona...'
+                            : `-- Seleccione la Institución Educativa (${instituciones.length} disponibles) --`}
+                        </option>
+                        {instituciones.map((inst) => (
+                          <option key={inst.id} value={inst.nombre}>
+                            {inst.codigo ? `${inst.codigo} - ${inst.nombre}` : inst.nombre}
+                          </option>
+                        ))}
+                        <option value="__OTRA__">✏️ Otra institución (no listada / ingresar a mano)...</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setModoManualInstitucion(true)}
+                        title="Escribir nombre manualmente"
+                        className="px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition whitespace-nowrap"
+                      >
+                        Ingreso manual
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="institucion_educativa"
+                        list="instituciones-catalogo"
+                        placeholder={
+                          institucionesCargando
+                            ? 'Filtrando instituciones...'
+                            : form.municipio
+                            ? `Ej: U.E. en ${MUNICIPIOS_GUARICO[form.municipio]?.nombre || form.municipio}...`
+                            : 'Ej: U.E. República del Brasil...'
+                        }
+                        value={form.institucion_educativa}
+                        onChange={handleChange}
+                        autoComplete="off"
+                        className={`flex-1 px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
+                          errors.institucion_educativa ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                        }`}
+                      />
+                      {form.municipio && instituciones.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setModoManualInstitucion(false)}
+                          className="px-3.5 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition whitespace-nowrap"
+                        >
+                          Ver Lista ({instituciones.length})
+                        </button>
+                      )}
+                    </div>
+                    <datalist id="instituciones-catalogo">
+                      {instituciones.map((inst) => (
+                        <option key={inst.id} value={inst.nombre}>
+                          {inst.codigo ? `${inst.codigo} - ${inst.nombre}` : inst.nombre} {inst.municipio ? `(${inst.municipio})` : ''}
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
+                )}
+
                 <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
                   <span>💡</span>
-                  <span>Seleccione una institución del catálogo sugerido o escriba manualmente el nombre si no se encuentra listada.</span>
+                  <span>
+                    {form.municipio
+                      ? `Mostrando planteles correspondientes a ${MUNICIPIOS_GUARICO[form.municipio]?.nombre || form.municipio}. Puede elegir de la lista o escribir a mano.`
+                      : 'El catálogo de instituciones se filtrará automáticamente en cuanto seleccione su Municipio en la sección de dirección.'}
+                  </span>
                 </p>
                 {errors.institucion_educativa && (
                   <p className="text-xs text-red-600 mt-1 font-medium">{errors.institucion_educativa}</p>
@@ -497,6 +613,20 @@ export default function RegistroConsejoComunal() {
                   ))}
                 </select>
                 {errors.municipio && <p className="text-xs text-red-600 mt-1 font-medium">{errors.municipio}</p>}
+                {form.municipio && (
+                  <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-medium flex items-center justify-between gap-1 shadow-sm">
+                    <span className="flex items-center gap-1.5">
+                      <span>✅</span>
+                      <span>Filtrando <strong>{instituciones.length}</strong> planteles de {MUNICIPIOS_GUARICO[form.municipio]?.nombre || form.municipio} en sus datos laborales.</span>
+                    </span>
+                    <a
+                      href="#institucion-educativa-field"
+                      className="text-blue-700 underline font-bold hover:text-blue-900 shrink-0 ml-1"
+                    >
+                      Ver institución ↑
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Parroquia dependiente */}
