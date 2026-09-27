@@ -20,9 +20,9 @@ build/
 .env
 .env.*
 .env*.local
-!.env.example
 *.env
 *.env.*
+!.env.example
 !.env.example.*
 *.credentials
 credentials.json

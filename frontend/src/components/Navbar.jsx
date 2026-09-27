@@ -119,6 +119,12 @@ export default function Navbar() {
               )}
             </NavLink>
 
+            {/* Consejos Comunales */}
+            <NavLink to="/consejos-comunales" className={navLinkClass}>
+              <span>🏛️</span>
+              <span>Consejos Comunales</span>
+            </NavLink>
+
             <div className="h-5 w-px bg-blue-800 mx-1"></div>
 
             {/* Login / Dashboard */}
@@ -220,6 +226,15 @@ export default function Navbar() {
               ) : (
                 <span className="text-[10px] text-blue-200 font-mono">13:00-22:00</span>
               )}
+            </NavLink>
+
+            <NavLink
+              to="/consejos-comunales"
+              onClick={() => setMenuAbierto(false)}
+              className={navLinkClass}
+            >
+              <span>🏛️</span>
+              <span className="flex-1">Consejos Comunales</span>
             </NavLink>
 
             <div className="border-t border-blue-800 pt-2">

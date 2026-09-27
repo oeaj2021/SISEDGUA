@@ -6,6 +6,7 @@ import FormManana from './pages/FormManana';
 import FormTarde from './pages/FormTarde';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import RegistroConsejoComunal from './pages/RegistroConsejoComunal';
 import { getRutaSegunHorario, getTurnoActivo } from './utils/horario';
 
 function RutaProtegida({ children }) {
@@ -43,10 +44,17 @@ function RutaTurnoGuard({ turno, children }) {
 }
 
 /**
- * Redirección dinámica según el horario legal en Venezuela (UTC-4):
- * Determina cuál ruta está habilitada y redirige automáticamente.
+ * Redirección dinámica según el horario legal en Venezuela (UTC-4) o dominio comuc:
+ * Si el host es comuc.sisedgua.site, sirve directamente el módulo comunal.
  */
 function RedireccionAutomatica() {
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'comuc.sisedgua.site' ||
+      window.location.hostname.startsWith('comuc.'))
+  ) {
+    return <RegistroConsejoComunal />;
+  }
   return <Navigate to={getRutaSegunHorario()} replace />;
 }
 
@@ -54,6 +62,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<RedireccionAutomatica />} />
+      <Route path="/consejos-comunales" element={<RegistroConsejoComunal />} />
+      <Route path="/comuc" element={<RegistroConsejoComunal />} />
       <Route
         path="/manana"
         element={

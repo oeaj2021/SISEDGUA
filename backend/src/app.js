@@ -11,11 +11,13 @@ const dashboardRoutes = require('./routes/dashboard');
 const exportRoutes = require('./routes/export');
 const institucionesRoutes = require('./routes/instituciones');
 const capacidadesRoutes = require('./routes/capacidades');
+const consejosComunalesRoutes = require('./routes/consejosComunales');
 
 const app = express();
 
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
+  process.env.COMUC_URL || 'https://comuc.sisedgua.site',
   'http://localhost:3000',
   'http://localhost:5174'
 ];
@@ -38,6 +40,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/instituciones', institucionesRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/consejos-comunales', consejosComunalesRoutes);
 
 // Rutas Protegidas (Requieren token JWT de Admin)
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);

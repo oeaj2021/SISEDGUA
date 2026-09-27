@@ -1,0 +1,608 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+import { MUNICIPIOS_GUARICO, COMITES_CONSEJO_COMUNAL } from '../utils/guaricoData';
+import { consejoComunalSchema } from '../schemas/consejoComunalSchema';
+
+export default function RegistroConsejoComunal() {
+  const INITIAL_STATE = {
+    nacionalidad: 'V',
+    cedula: '',
+    nombres_apellidos: '',
+    telefono: '',
+    tipo_personal: '',
+    tipo_personal_otro: '',
+    municipio: '',
+    parroquia: '',
+    comunidad: '',
+    circuito_comunal: '',
+    comuna: '',
+    participa_asambleas: null,
+    forma_parte_comite: null,
+    comite: '',
+    comite_otro: ''
+  };
+
+  const [form, setForm] = useState(INITIAL_STATE);
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [modalSuccess, setModalSuccess] = useState(null);
+  const [serverError, setServerError] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'municipio') updated.parroquia = '';
+      if (name === 'tipo_personal' && value !== 'Otro') updated.tipo_personal_otro = '';
+      if (name === 'comite' && value !== 'Otro (especifique)') updated.comite_otro = '';
+      return updated;
+    });
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleBooleanChange = (name, value) => {
+    setForm((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'forma_parte_comite' && !value) {
+        updated.comite = '';
+        updated.comite_otro = '';
+      }
+      return updated;
+    });
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setServerError('');
+
+    const validation = consejoComunalSchema.safeParse(form);
+    if (!validation.success) {
+      const fieldErrors = {};
+      validation.error.issues.forEach((err) => {
+        fieldErrors[err.path[0]] = err.message;
+      });
+      setErrors(fieldErrors);
+      // Desplazar al primer error en dispositivos móviles
+      const firstErrorField = Object.keys(fieldErrors)[0];
+      const elem = document.querySelector(`[name="${firstErrorField}"]`);
+      if (elem) elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    setSubmitting(true);
+
+    const payload = {
+      nacionalidad: form.nacionalidad,
+      cedula: form.cedula.trim(),
+      nombres_apellidos: form.nombres_apellidos.trim(),
+      telefono: form.telefono.trim(),
+      tipo_personal: {
+        valor: form.tipo_personal,
+        detalle: form.tipo_personal === 'Otro' ? form.tipo_personal_otro.trim() : null
+      },
+      municipio: form.municipio,
+      parroquia: form.parroquia,
+      comunidad: form.comunidad.trim(),
+      circuito_comunal: form.circuito_comunal.trim() || null,
+      comuna: form.comuna.trim() || null,
+      participa_asambleas: form.participa_asambleas,
+      forma_parte_comite: form.forma_parte_comite,
+      comite: form.forma_parte_comite
+        ? {
+            valor: form.comite,
+            detalle: form.comite === 'Otro (especifique)' ? form.comite_otro.trim() : null
+          }
+        : null
+    };
+
+    try {
+      const res = await axios.post('/api/consejos-comunales', payload);
+      setModalSuccess({
+        ...payload,
+        id: res.data?.registro?.id ? `REG-${String(res.data.registro.id).padStart(5, '0')}` : `REG-${Date.now().toString().slice(-6)}`
+      });
+      setForm(INITIAL_STATE);
+      setErrors({});
+    } catch (err) {
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        'Error de conexión con el servidor. Verifique su acceso a internet o intente nuevamente.';
+      setServerError(msg);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100 py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        {/* Cabecera Oficial Institucional */}
+        <header className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 mb-6 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-full uppercase tracking-wider mb-3">
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+            Zona Educativa del Estado Guárico
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
+            Sector Educativo Participa en Consejos Comunales
+          </h1>
+          <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+            Instrumento oficial de captación y vinculación del personal educativo en las estructuras del Poder Popular.
+          </p>
+        </header>
+
+        {serverError && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-xl text-red-700 text-sm font-medium flex items-center justify-between shadow-sm">
+            <span>⚠️ {serverError}</span>
+            <button
+              type="button"
+              onClick={() => setServerError('')}
+              className="text-red-500 hover:text-red-800 text-lg font-bold px-2"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+          {/* SECCIÓN 1: DATOS PERSONALES Y LABORALES */}
+          <section className="bg-white p-5 sm:p-7 rounded-2xl shadow-sm border border-slate-200/80">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-3 mb-5">
+              <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-black">
+                1
+              </span>
+              <h2 className="text-lg font-bold text-slate-900">Datos Personales y Laborales</h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Cédula de Identidad */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Cédula de Identidad <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    name="nacionalidad"
+                    value={form.nacionalidad}
+                    onChange={handleChange}
+                    className="w-20 px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"
+                  >
+                    <option value="V">V-</option>
+                    <option value="E">E-</option>
+                  </select>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    name="cedula"
+                    placeholder="Ej: 18456789"
+                    maxLength={8}
+                    value={form.cedula}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setForm((prev) => ({ ...prev, cedula: val }));
+                      if (errors.cedula) setErrors((prev) => ({ ...prev, cedula: undefined }));
+                    }}
+                    className={`flex-1 px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 font-semibold ${
+                      errors.cedula ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                    }`}
+                  />
+                </div>
+                {errors.cedula && <p className="text-xs text-red-600 mt-1 font-medium">{errors.cedula}</p>}
+              </div>
+
+              {/* Teléfono de Contacto */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Teléfono de Contacto <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  name="telefono"
+                  placeholder="04141234567"
+                  maxLength={11}
+                  value={form.telefono}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setForm((prev) => ({ ...prev, telefono: val }));
+                    if (errors.telefono) setErrors((prev) => ({ ...prev, telefono: undefined }));
+                  }}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 font-semibold ${
+                    errors.telefono ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                />
+                {errors.telefono && <p className="text-xs text-red-600 mt-1 font-medium">{errors.telefono}</p>}
+              </div>
+
+              {/* Nombres y Apellidos */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Nombres y Apellidos <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="nombres_apellidos"
+                  placeholder="Nombre y Apellido completo (solo letras)"
+                  value={form.nombres_apellidos}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
+                    errors.nombres_apellidos ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                />
+                {errors.nombres_apellidos && (
+                  <p className="text-xs text-red-600 mt-1 font-medium">{errors.nombres_apellidos}</p>
+                )}
+              </div>
+
+              {/* Tipo de Personal */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Tipo de Personal (Nómina MPPE) <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="tipo_personal"
+                  value={form.tipo_personal}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
+                    errors.tipo_personal ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="">-- Seleccione una opción --</option>
+                  <option value="Docente">Docente</option>
+                  <option value="Obrero">Obrero</option>
+                  <option value="Administrativo">Administrativo</option>
+                  <option value="Cocinera(o) de la Patria">Cocinera(o) de la Patria</option>
+                  <option value="Directivo / Supervisor">Directivo / Supervisor</option>
+                  <option value="Otro">Otro</option>
+                </select>
+                {errors.tipo_personal && (
+                  <p className="text-xs text-red-600 mt-1 font-medium">{errors.tipo_personal}</p>
+                )}
+
+                {/* Dinámico: Especifique tipo de personal */}
+                {form.tipo_personal === 'Otro' && (
+                  <div className="mt-3 p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl transition-all duration-300">
+                    <label className="block text-xs font-bold uppercase text-blue-900 mb-1">
+                      Especifique Tipo de Personal <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="tipo_personal_otro"
+                      placeholder="Ej: Auxiliar de Preescolar, Tutor CBIT, Facilitador"
+                      value={form.tipo_personal_otro}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 bg-white border rounded-lg outline-none focus:ring-2 text-slate-900 ${
+                        errors.tipo_personal_otro ? 'border-red-500 focus:ring-red-200' : 'border-blue-300 focus:ring-blue-500'
+                      }`}
+                    />
+                    {errors.tipo_personal_otro && (
+                      <p className="text-xs text-red-600 mt-1 font-medium">{errors.tipo_personal_otro}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* SECCIÓN 2: UBICACIÓN GEOGRÁFICA Y COMUNITARIA */}
+          <section className="bg-white p-5 sm:p-7 rounded-2xl shadow-sm border border-slate-200/80">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-3 mb-5">
+              <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-black">
+                2
+              </span>
+              <h2 className="text-lg font-bold text-slate-900">Ubicación Geográfica y Comunitaria</h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Municipio */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Municipio <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="municipio"
+                  value={form.municipio}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
+                    errors.municipio ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="">-- Seleccione Municipio --</option>
+                  {Object.entries(MUNICIPIOS_GUARICO).map(([key, data]) => (
+                    <option key={key} value={key}>
+                      {data.nombre}
+                    </option>
+                  ))}
+                </select>
+                {errors.municipio && <p className="text-xs text-red-600 mt-1 font-medium">{errors.municipio}</p>}
+              </div>
+
+              {/* Parroquia dependiente */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Parroquia <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="parroquia"
+                  value={form.parroquia}
+                  onChange={handleChange}
+                  disabled={!form.municipio}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    errors.parroquia ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="">{form.municipio ? '-- Seleccione Parroquia --' : 'Primero elija Municipio'}</option>
+                  {form.municipio &&
+                    MUNICIPIOS_GUARICO[form.municipio]?.parroquias.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                </select>
+                {errors.parroquia && <p className="text-xs text-red-600 mt-1 font-medium">{errors.parroquia}</p>}
+              </div>
+
+              {/* Nombre de la Comunidad */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Nombre de la Comunidad <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="comunidad"
+                  placeholder="Ej: Sector Las Palmas, Calle 3 con Carrera 4"
+                  value={form.comunidad}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
+                    errors.comunidad ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                  }`}
+                />
+                {errors.comunidad && <p className="text-xs text-red-600 mt-1 font-medium">{errors.comunidad}</p>}
+              </div>
+
+              {/* Circuito Comunal (Opcional / No limitante) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Circuito Comunal <span className="text-slate-400 font-normal lowercase">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  name="circuito_comunal"
+                  placeholder="Ej: Circuito Electoral Comunal N° 05"
+                  value={form.circuito_comunal}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900"
+                />
+              </div>
+
+              {/* Comuna (Opcional / No limitante) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Comuna <span className="text-slate-400 font-normal lowercase">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  name="comuna"
+                  placeholder="Ej: Comuna Socialista El Sombrero Unido"
+                  value={form.comuna}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* SECCIÓN 3: PARTICIPACIÓN EN EL PODER POPULAR */}
+          <section className="bg-white p-5 sm:p-7 rounded-2xl shadow-sm border border-slate-200/80">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-3 mb-5">
+              <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-black">
+                3
+              </span>
+              <h2 className="text-lg font-bold text-slate-900">Participación en el Poder Popular</h2>
+            </div>
+
+            <div className="space-y-6">
+              {/* Radio 1: Participa en asambleas */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
+                  ¿Pertenece o participa activamente en las asambleas del Consejo Comunal? <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[true, false].map((val) => (
+                    <button
+                      type="button"
+                      key={String(val)}
+                      onClick={() => handleBooleanChange('participa_asambleas', val)}
+                      className={`p-3.5 rounded-xl border text-sm font-bold transition-all text-center flex items-center justify-center gap-2 ${
+                        form.participa_asambleas === val
+                          ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500/20'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        form.participa_asambleas === val ? 'border-blue-600 bg-blue-600' : 'border-slate-400'
+                      }`}>
+                        {form.participa_asambleas === val && <span className="w-1.5 h-1.5 rounded-full bg-white"></span>}
+                      </span>
+                      {val ? 'Sí, participo' : 'No participo'}
+                    </button>
+                  ))}
+                </div>
+                {errors.participa_asambleas && (
+                  <p className="text-xs text-red-600 mt-1 font-medium">{errors.participa_asambleas}</p>
+                )}
+              </div>
+
+              {/* Radio 2: Forma parte de algún Comité */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
+                  ¿Forma parte de algún Comité del Consejo Comunal? <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[true, false].map((val) => (
+                    <button
+                      type="button"
+                      key={String(val)}
+                      onClick={() => handleBooleanChange('forma_parte_comite', val)}
+                      className={`p-3.5 rounded-xl border text-sm font-bold transition-all text-center flex items-center justify-center gap-2 ${
+                        form.forma_parte_comite === val
+                          ? 'border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500/20'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        form.forma_parte_comite === val ? 'border-blue-600 bg-blue-600' : 'border-slate-400'
+                      }`}>
+                        {form.forma_parte_comite === val && <span className="w-1.5 h-1.5 rounded-full bg-white"></span>}
+                      </span>
+                      {val ? 'Sí' : 'No'}
+                    </button>
+                  ))}
+                </div>
+                {errors.forma_parte_comite && (
+                  <p className="text-xs text-red-600 mt-1 font-medium">{errors.forma_parte_comite}</p>
+                )}
+              </div>
+
+              {/* Desplegable Condicionado: Comités */}
+              {form.forma_parte_comite === true && (
+                <div className="pt-4 border-t border-slate-100 transition-all duration-300">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Comité al que pertenece (Ley Orgánica de los Consejos Comunales) <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="comite"
+                    value={form.comite}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:bg-white text-slate-900 ${
+                      errors.comite ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
+                    }`}
+                  >
+                    <option value="">-- Seleccione Comité o Vocería --</option>
+                    {COMITES_CONSEJO_COMUNAL.map((comite) => (
+                      <option key={comite} value={comite}>
+                        {comite}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.comite && <p className="text-xs text-red-600 mt-1 font-medium">{errors.comite}</p>}
+
+                  {/* Dinámico: Especifique Comité */}
+                  {form.comite === 'Otro (especifique)' && (
+                    <div className="mt-3 p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl transition-all duration-300">
+                      <label className="block text-xs font-bold uppercase text-blue-900 mb-1">
+                        Nombre del Comité / Vocería <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="comite_otro"
+                        placeholder="Ej: Comité de Transporte Comunal, Mesa Técnica de Agua"
+                        value={form.comite_otro}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-2 bg-white border rounded-lg outline-none focus:ring-2 text-slate-900 ${
+                          errors.comite_otro ? 'border-red-500 focus:ring-red-200' : 'border-blue-300 focus:ring-blue-500'
+                        }`}
+                      />
+                      {errors.comite_otro && (
+                        <p className="text-xs text-red-600 mt-1 font-medium">{errors.comite_otro}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Botón de Envío con Estado de Carga */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-4 px-6 bg-blue-700 hover:bg-blue-800 active:bg-blue-900 disabled:bg-blue-400 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-blue-700/20 transition-all flex items-center justify-center gap-3 cursor-pointer disabled:cursor-not-allowed"
+          >
+            {submitting ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>Enviando Registro Comunal...</span>
+              </>
+            ) : (
+              <span>Registrar Participación en Consejo Comunal</span>
+            )}
+          </button>
+        </form>
+
+        {/* Modal de Confirmación Exitosa */}
+        {modalSuccess && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 animate-fadeIn">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-black">
+                ✓
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 text-center">
+                ¡Registro Completado con Éxito!
+              </h3>
+              <p className="text-xs text-slate-500 text-center mt-1">
+                Comprobante de Registro: <span className="font-mono font-bold text-slate-800">{modalSuccess.id}</span>
+              </p>
+
+              <div className="mt-6 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-2 text-xs sm:text-sm text-slate-700">
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="font-bold text-slate-500">Cédula:</span>
+                  <span className="font-semibold text-slate-900">{modalSuccess.nacionalidad}-{modalSuccess.cedula}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="font-bold text-slate-500">Nombres y Apellidos:</span>
+                  <span className="font-semibold text-slate-900">{modalSuccess.nombres_apellidos}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="font-bold text-slate-500">Tipo de Personal:</span>
+                  <span className="font-semibold text-slate-900">
+                    {modalSuccess.tipo_personal.valor}
+                    {modalSuccess.tipo_personal.detalle ? ` (${modalSuccess.tipo_personal.detalle})` : ''}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="font-bold text-slate-500">Municipio / Parroquia:</span>
+                  <span className="font-semibold text-slate-900">
+                    {MUNICIPIOS_GUARICO[modalSuccess.municipio]?.nombre} — {modalSuccess.parroquia}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="font-bold text-slate-500">Comunidad:</span>
+                  <span className="font-semibold text-slate-900">{modalSuccess.comunidad}</span>
+                </div>
+                <div className="flex justify-between pt-0.5">
+                  <span className="font-bold text-slate-500">Comité Asignado:</span>
+                  <span className="font-semibold text-slate-900 text-right">
+                    {modalSuccess.comite
+                      ? `${modalSuccess.comite.valor}${modalSuccess.comite.detalle ? ` (${modalSuccess.comite.detalle})` : ''}`
+                      : 'No pertenece a comité'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setModalSuccess(null)}
+                className="mt-6 w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
+              >
+                Aceptar y Finalizar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
