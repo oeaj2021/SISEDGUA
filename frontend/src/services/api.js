@@ -38,4 +38,11 @@ export const getTendencia = (params) => api.get('/dashboard/tendencia', { params
 export const getReportes = (params) => api.get('/dashboard/reportes', { params });
 export const exportExcel = (params) => api.get('/export/excel', { params, responseType: 'blob' });
 
+// Consejos Comunales (Público y Auditoría Admin)
+export const submitConsejoComunal = (data) => api.post('/consejos-comunales', data);
+export const getConsejosComunalesStats = () => api.get('/consejos-comunales/stats');
+export const getConsejosComunales = (params) => api.get('/consejos-comunales', { params });
+export const exportConsejosComunalesExcel = (params) =>
+  api.get('/consejos-comunales/export/excel', { params, responseType: 'blob' });
+
 export default api;

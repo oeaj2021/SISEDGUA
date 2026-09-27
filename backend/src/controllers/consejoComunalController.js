@@ -1,4 +1,6 @@
 const { RegistroConsejoComunal, sequelize } = require('../models');
+const { Op } = require('sequelize');
+const ExcelJS = require('exceljs');
 
 // Regex de validación estricta
 const REGEX_CEDULA = /^\d{6,8}$/;
@@ -220,5 +222,151 @@ exports.obtenerEstadisticas = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener estadísticas comunales:', error);
     return res.status(500).json({ error: 'Error al consultar estadísticas.' });
+  }
+};
+
+/**
+ * GET /api/consejos-comunales
+ * Lista paginada y filtrable para panel administrativo
+ */
+exports.listarRegistros = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 15,
+      search = '',
+      municipio = '',
+      tipo_personal = '',
+      forma_parte_comite = ''
+    } = req.query;
+
+    const offset = (Math.max(1, parseInt(page, 10)) - 1) * parseInt(limit, 10);
+    const where = {};
+
+    if (search && search.trim()) {
+      const s = `%${search.trim()}%`;
+      where[Op.or] = [
+        { cedula: { [Op.iLike]: s } },
+        { nombres_apellidos: { [Op.iLike]: s } },
+        { comunidad: { [Op.iLike]: s } }
+      ];
+    }
+
+    if (municipio && municipio.trim()) {
+      where.municipio = municipio.trim();
+    }
+
+    if (tipo_personal && tipo_personal.trim()) {
+      where.tipo_personal = tipo_personal.trim();
+    }
+
+    if (forma_parte_comite !== '') {
+      where.forma_parte_comite = forma_parte_comite === 'true' || forma_parte_comite === true;
+    }
+
+    const { count, rows } = await RegistroConsejoComunal.findAndCountAll({
+      where,
+      limit: parseInt(limit, 10),
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.json({
+      total: count,
+      page: parseInt(page, 10),
+      totalPages: Math.ceil(count / parseInt(limit, 10)) || 1,
+      data: rows
+    });
+  } catch (error) {
+    console.error('Error al listar registros comunales:', error);
+    return res.status(500).json({ error: 'Error al consultar registros de participación comunal.' });
+  }
+};
+
+/**
+ * GET /api/consejos-comunales/export/excel
+ * Exportación completa a Excel formateado con ExcelJS
+ */
+exports.exportarExcel = async (req, res) => {
+  try {
+    const { municipio, tipo_personal } = req.query;
+    const where = {};
+    if (municipio) where.municipio = municipio;
+    if (tipo_personal) where.tipo_personal = tipo_personal;
+
+    const registros = await RegistroConsejoComunal.findAll({
+      where,
+      order: [['municipio', 'ASC'], ['createdAt', 'DESC']]
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SISEDGUA - CDCE ESTADAL GUÁRICO';
+    const worksheet = workbook.addWorksheet('Participación Comunal', {
+      views: [{ showGridLines: true }]
+    });
+
+    worksheet.columns = [
+      { header: '#', key: 'index', width: 6 },
+      { header: 'Cédula', key: 'cedula', width: 14 },
+      { header: 'Nombres y Apellidos', key: 'nombres_apellidos', width: 32 },
+      { header: 'Teléfono', key: 'telefono', width: 16 },
+      { header: 'Tipo Personal', key: 'tipo_personal', width: 22 },
+      { header: 'Detalle Personal', key: 'tipo_personal_detalle', width: 26 },
+      { header: 'Municipio', key: 'municipio', width: 20 },
+      { header: 'Parroquia', key: 'parroquia', width: 22 },
+      { header: 'Comunidad / Sector', key: 'comunidad', width: 30 },
+      { header: 'Circuito Comunal', key: 'circuito_comunal', width: 22 },
+      { header: 'Comuna', key: 'comuna', width: 24 },
+      { header: 'Asambleas C.C.', key: 'participa_asambleas', width: 16 },
+      { header: 'En Comité', key: 'forma_parte_comite', width: 14 },
+      { header: 'Comité / Vocería', key: 'comite', width: 35 },
+      { header: 'Detalle Comité', key: 'comite_detalle', width: 26 },
+      { header: 'Fecha Registro', key: 'fecha', width: 18 }
+    ];
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 26;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+
+    registros.forEach((reg, i) => {
+      const row = worksheet.addRow({
+        index: i + 1,
+        cedula: `${reg.nacionalidad}-${reg.cedula}`,
+        nombres_apellidos: reg.nombres_apellidos,
+        telefono: reg.telefono,
+        tipo_personal: reg.tipo_personal,
+        tipo_personal_detalle: reg.tipo_personal_detalle || 'N/A',
+        municipio: reg.municipio,
+        parroquia: reg.parroquia,
+        comunidad: reg.comunidad,
+        circuito_comunal: reg.circuito_comunal || 'N/A',
+        comuna: reg.comuna || 'N/A',
+        participa_asambleas: reg.participa_asambleas ? 'SÍ' : 'NO',
+        forma_parte_comite: reg.forma_parte_comite ? 'SÍ' : 'NO',
+        comite: reg.comite || 'N/A',
+        comite_detalle: reg.comite_detalle || 'N/A',
+        fecha: new Date(reg.createdAt).toLocaleDateString('es-VE')
+      });
+      row.alignment = { vertical: 'middle' };
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Reporte_Consejos_Comunales_Guarico_${Date.now()}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    res.status(500).json({ error: 'Error al generar reporte Excel' });
   }
 };

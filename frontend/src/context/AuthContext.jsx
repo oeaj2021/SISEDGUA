@@ -13,12 +13,12 @@ export function AuthProvider({ children }) {
 
   const navigate = useNavigate();
 
-  const loginAdmin = useCallback((token, nombre, email) => {
+  const loginAdmin = useCallback((token, nombre, email, redirectTo = '/dashboard') => {
     localStorage.setItem('sisedgua_token', token);
     localStorage.setItem('sisedgua_nombre', nombre);
     localStorage.setItem('sisedgua_email', email || '');
     setAdmin({ token, nombre, email });
-    navigate('/dashboard');
+    navigate(redirectTo);
   }, [navigate]);
 
   const logout = useCallback(() => {

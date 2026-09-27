@@ -7,6 +7,7 @@ import FormTarde from './pages/FormTarde';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import RegistroConsejoComunal from './pages/RegistroConsejoComunal';
+import RegistrosConsejosComunales from './pages/RegistrosConsejosComunales';
 import { getRutaSegunHorario, getTurnoActivo } from './utils/horario';
 
 function RutaProtegida({ children }) {
@@ -64,6 +65,31 @@ function AppRoutes() {
       <Route path="/" element={<RedireccionAutomatica />} />
       <Route path="/consejos-comunales" element={<RegistroConsejoComunal />} />
       <Route path="/comuc" element={<RegistroConsejoComunal />} />
+      <Route
+        path="/consejos-comunales/registros"
+        element={
+          <RutaProtegida>
+            <RegistrosConsejosComunales />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/comuc/registros"
+        element={
+          <RutaProtegida>
+            <RegistrosConsejosComunales />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/comuc/admin"
+        element={
+          <RutaProtegida>
+            <RegistrosConsejosComunales />
+          </RutaProtegida>
+        }
+      />
+      <Route path="/comuc/login" element={<Login />} />
       <Route
         path="/manana"
         element={

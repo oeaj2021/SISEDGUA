@@ -13,6 +13,14 @@ export default function Navbar() {
   const [horaVE, setHoraVE] = useState(getHoraVenezuelaFormateada());
   const [turnoActivo, setTurnoActivo] = useState(getTurnoActivo());
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const esRutaComunales =
+    location.pathname.startsWith('/consejos-comunales') ||
+    location.pathname.startsWith('/comuc') ||
+    (typeof window !== 'undefined' &&
+      (window.location.hostname === 'comuc.sisedgua.site' ||
+        window.location.hostname.startsWith('comuc.')));
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,7 +32,7 @@ export default function Navbar() {
 
   const handleCerrarSesion = () => {
     logout();
-    navigate('/login');
+    navigate(esRutaComunales ? '/login?redirect=/consejos-comunales/registros' : '/login');
   };
 
   const navLinkClass = ({ isActive }) =>
@@ -33,6 +41,138 @@ export default function Navbar() {
         ? 'bg-white text-blue-900 shadow-sm'
         : 'text-blue-100 hover:bg-blue-800 hover:text-white'
     }`;
+
+  // NAVBAR EXCLUSIVO PARA CONSEJOS COMUNALES (Sin cintillo ni turnos de asistencia escolar)
+  if (esRutaComunales) {
+    return (
+      <header className="sticky top-0 z-50 shadow-md">
+        <nav className="bg-blue-900 border-b border-blue-950 px-4 py-3 text-white">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            {/* Logo / Título Consejos Comunales */}
+            <NavLink to="/consejos-comunales" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl bg-white text-blue-900 flex items-center justify-center text-xl font-black shadow-sm group-hover:bg-blue-50 transition-colors">
+                🏛️
+              </div>
+              <div>
+                <span className="font-black text-white text-base sm:text-lg tracking-tight block leading-tight">
+                  Consejos Comunales
+                </span>
+                <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wider">
+                  CDCE ESTADAL GUÁRICO
+                </p>
+              </div>
+            </NavLink>
+
+            {/* Navegación Desktop: Solo Consejos Comunales y Login / Sesión */}
+            <div className="hidden md:flex items-center gap-3">
+              <NavLink to="/consejos-comunales" className={navLinkClass}>
+                <span>Consejos Comunales</span>
+              </NavLink>
+
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  <NavLink
+                    to="/consejos-comunales/registros"
+                    className={({ isActive }) =>
+                      `flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition ${
+                        isActive
+                          ? 'bg-white text-blue-900 shadow-sm'
+                          : 'text-blue-100 hover:bg-blue-800 hover:text-white'
+                      }`
+                    }
+                  >
+                    <span>📊 Registros</span>
+                  </NavLink>
+                  <button
+                    onClick={handleCerrarSesion}
+                    className="px-3 py-1.5 rounded-lg bg-blue-950 hover:bg-red-800 text-blue-200 hover:text-white text-xs font-bold transition cursor-pointer"
+                  >
+                    Salir
+                  </button>
+                </div>
+              ) : (
+                <NavLink
+                  to="/login?redirect=/consejos-comunales/registros"
+                  className={({ isActive }) =>
+                    `flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs sm:text-sm font-black transition ${
+                      isActive
+                        ? 'bg-white text-blue-900 shadow-md ring-2 ring-white/50'
+                        : 'bg-white text-blue-900 hover:bg-blue-50 shadow-sm'
+                    }`
+                  }
+                >
+                  <span>Login</span>
+                </NavLink>
+              )}
+            </div>
+
+            {/* Botón Móvil Hamburguesa */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                onClick={() => setMenuAbierto(!menuAbierto)}
+                aria-label="Abrir Menú"
+                className="p-2 rounded-lg bg-blue-800 text-white hover:bg-blue-700 focus:outline-none"
+              >
+                {menuAbierto ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Menú Móvil */}
+          {menuAbierto && (
+            <div className="md:hidden pt-3 pb-2 border-t border-blue-800 mt-2 space-y-2">
+              <NavLink
+                to="/consejos-comunales"
+                onClick={() => setMenuAbierto(false)}
+                className={navLinkClass}
+              >
+                <span>Consejos Comunales</span>
+              </NavLink>
+
+              {isAuthenticated ? (
+                <div className="pt-2 border-t border-blue-800 space-y-2">
+                  <NavLink
+                    to="/consejos-comunales/registros"
+                    onClick={() => setMenuAbierto(false)}
+                    className={navLinkClass}
+                  >
+                    <span>📊 Registros</span>
+                  </NavLink>
+                  <button
+                    onClick={() => {
+                      setMenuAbierto(false);
+                      handleCerrarSesion();
+                    }}
+                    className="w-full py-2 bg-blue-950 text-white text-xs font-bold rounded-lg transition"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              ) : (
+                <div className="pt-2 border-t border-blue-800">
+                  <NavLink
+                    to="/login?redirect=/consejos-comunales/registros"
+                    onClick={() => setMenuAbierto(false)}
+                    className="flex items-center justify-center py-2.5 rounded-lg text-xs font-black bg-white text-blue-900"
+                  >
+                    Login
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          )}
+        </nav>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 shadow-md">
@@ -57,7 +197,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-[11px] text-blue-100 font-medium hidden md:block">
-                Centro Desarrollo de la Calidad Educativa Guárico · Control de Asistencia
+                CDCE ESTADAL GUÁRICO · Control de Asistencia
               </p>
             </div>
           </NavLink>
@@ -141,8 +281,23 @@ export default function Navbar() {
                   }
                 >
                   <span>📊</span>
-                  <span>Panel Admin</span>
+                  <span>Asistencia</span>
                 </NavLink>
+
+                <NavLink
+                  to="/consejos-comunales/registros"
+                  className={({ isActive }) =>
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      isActive
+                        ? 'bg-white text-blue-900 shadow-sm'
+                        : 'bg-blue-800 text-white hover:bg-blue-700'
+                    }`
+                  }
+                >
+                  <span>🏛️</span>
+                  <span>Comunales</span>
+                </NavLink>
+
                 <button
                   onClick={handleCerrarSesion}
                   title="Cerrar Sesión"
@@ -239,23 +394,33 @@ export default function Navbar() {
 
             <div className="border-t border-blue-800 pt-2">
               {isAuthenticated ? (
-                <div className="flex gap-2">
-                  <NavLink
-                    to="/dashboard"
-                    onClick={() => setMenuAbierto(false)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-white text-blue-900"
-                  >
-                    <span>📊</span>
-                    <span>Panel Admin</span>
-                  </NavLink>
+                <div className="space-y-1.5">
+                  <div className="flex gap-2">
+                    <NavLink
+                      to="/dashboard"
+                      onClick={() => setMenuAbierto(false)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-white text-blue-900"
+                    >
+                      <span>📊</span>
+                      <span>Asistencia</span>
+                    </NavLink>
+                    <NavLink
+                      to="/consejos-comunales/registros"
+                      onClick={() => setMenuAbierto(false)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-white text-blue-900"
+                    >
+                      <span>🏛️</span>
+                      <span>Comunales</span>
+                    </NavLink>
+                  </div>
                   <button
                     onClick={() => {
                       setMenuAbierto(false);
                       handleCerrarSesion();
                     }}
-                    className="px-3 py-2 rounded-lg bg-blue-950 text-white text-xs font-bold"
+                    className="w-full py-2 rounded-lg bg-blue-950 text-white text-xs font-bold"
                   >
-                    Salir
+                    Cerrar Sesión
                   </button>
                 </div>
               ) : (

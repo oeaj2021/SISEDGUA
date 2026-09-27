@@ -129,7 +129,7 @@ export default function RegistroConsejoComunal() {
         <header className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 mb-6 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-full uppercase tracking-wider mb-3">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-            Zona Educativa del Estado Guárico
+            CDCE ESTADAL GUÁRICO
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
             Sector Educativo Participa en Consejos Comunales

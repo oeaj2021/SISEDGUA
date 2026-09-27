@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { login } from '../services/api';
 
 export default function Login() {
   const { loginAdmin } = useAuth();
+  const [searchParams] = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
+
+  const esComuc =
+    redirectParam?.includes('consejos') ||
+    redirectParam?.includes('comuc') ||
+    (typeof window !== 'undefined' &&
+      (window.location.hostname === 'comuc.sisedgua.site' ||
+        window.location.hostname.startsWith('comuc.')));
+
+  const destinoFinal = redirectParam || (esComuc ? '/consejos-comunales/registros' : '/dashboard');
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +29,7 @@ export default function Login() {
 
     try {
       const res = await login({ email, password });
-      loginAdmin(res.data.token, res.data.nombre, res.data.email);
+      loginAdmin(res.data.token, res.data.nombre, res.data.email, destinoFinal);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || 'Credenciales no autorizadas');
@@ -31,14 +43,16 @@ export default function Login() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-blue-50 text-blue-700 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-blue-200 shadow-xs">
-            🏫
+            {esComuc ? '🏛️' : '🏫'}
           </div>
           <span className="text-[11px] font-bold tracking-wider text-blue-700 uppercase block mb-1">
-            Centro Desarrollo de la Calidad Educativa Guárico
+            {esComuc ? 'Poder Popular & Educación Guárico' : 'Centro Desarrollo de la Calidad Educativa Guárico'}
           </span>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">SISEDGUA</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {esComuc ? 'Consejos Comunales' : 'SISEDGUA'}
+          </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Acceso Administrativo y Auditoría
+            {esComuc ? 'Acceso al Registro y Auditoría Comunal' : 'Acceso Administrativo y Auditoría'}
           </p>
         </div>
 
