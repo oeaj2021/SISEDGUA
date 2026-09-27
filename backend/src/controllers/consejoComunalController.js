@@ -1,6 +1,7 @@
 const { RegistroConsejoComunal, PadronPersonal, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const ExcelJS = require('exceljs');
+const ss = require('simple-statistics');
 
 // Regex de validación estricta
 const REGEX_CEDULA = /^\d{6,8}$/;
@@ -230,7 +231,7 @@ exports.crearRegistro = async (req, res) => {
 
 /**
  * GET /api/consejos-comunales/stats
- * Estadísticas consolidadas para dashboard administrativo
+ * Estadísticas consolidadas, descriptivas y comparativas multidimensionales
  */
 exports.obtenerEstadisticas = async (req, res) => {
   try {
@@ -238,43 +239,192 @@ exports.obtenerEstadisticas = async (req, res) => {
     const conComite = await RegistroConsejoComunal.count({ where: { forma_parte_comite: true } });
     const enAsambleas = await RegistroConsejoComunal.count({ where: { participa_asambleas: true } });
 
-    const porMunicipio = await RegistroConsejoComunal.findAll({
-      attributes: [
-        'municipio',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total']
-      ],
-      group: ['municipio'],
-      order: [[sequelize.literal('total'), 'DESC']]
+    // Cuadrantes de compromiso
+    const ambos = await RegistroConsejoComunal.count({
+      where: { forma_parte_comite: true, participa_asambleas: true }
+    });
+    const soloAsamblea = await RegistroConsejoComunal.count({
+      where: { forma_parte_comite: false, participa_asambleas: true }
+    });
+    const soloComite = await RegistroConsejoComunal.count({
+      where: { forma_parte_comite: true, participa_asambleas: false }
+    });
+    const pasivo = await RegistroConsejoComunal.count({
+      where: { forma_parte_comite: false, participa_asambleas: false }
     });
 
-    const porTipoPersonal = await RegistroConsejoComunal.findAll({
-      attributes: [
-        'tipo_personal',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total']
-      ],
-      group: ['tipo_personal'],
-      order: [[sequelize.literal('total'), 'DESC']]
+    // Estadísticas descriptivas de edad usando simple-statistics
+    const registrosEdad = await RegistroConsejoComunal.findAll({
+      attributes: ['edad'],
+      where: {
+        edad: { [Op.ne]: null }
+      },
+      raw: true
     });
 
+    const edades = registrosEdad
+      .map((r) => Number(r.edad))
+      .filter((e) => !isNaN(e) && e > 0);
+
+    let estadisticasEdad = {
+      media: 0,
+      mediana: 0,
+      desviacionEstandar: 0,
+      min: 0,
+      max: 0,
+      q1: 0,
+      q3: 0,
+      totalMuestra: edades.length
+    };
+
+    if (edades.length > 0) {
+      estadisticasEdad = {
+        media: Number(ss.mean(edades).toFixed(1)),
+        mediana: Number(ss.median(edades).toFixed(1)),
+        desviacionEstandar: edades.length > 1 ? Number(ss.standardDeviation(edades).toFixed(1)) : 0,
+        min: ss.min(edades),
+        max: ss.max(edades),
+        q1: Number(ss.quantile(edades, 0.25).toFixed(1)),
+        q3: Number(ss.quantile(edades, 0.75).toFixed(1)),
+        totalMuestra: edades.length
+      };
+    }
+
+    // Rangos etarios comparativos
+    const rangosEdad = await RegistroConsejoComunal.findAll({
+      attributes: [
+        [
+          sequelize.literal(`CASE 
+            WHEN edad BETWEEN 15 AND 29 THEN '15-29 (Juventud)' 
+            WHEN edad BETWEEN 30 AND 45 THEN '30-45 (Adulto Joven)' 
+            WHEN edad BETWEEN 46 AND 59 THEN '46-59 (Adulto Maduro)' 
+            WHEN edad >= 60 THEN '60+ (Adulto Mayor)' 
+            ELSE 'No especificado' END`),
+          'rango'
+        ],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total'],
+        [sequelize.literal("COUNT(CASE WHEN forma_parte_comite = true THEN 1 END)"), 'con_comite'],
+        [sequelize.literal("COUNT(CASE WHEN participa_asambleas = true THEN 1 END)"), 'en_asambleas']
+      ],
+      group: ['rango'],
+      order: [[sequelize.literal('total'), 'DESC']],
+      raw: true
+    });
+
+    // Comparativa por Género
     const porGenero = await RegistroConsejoComunal.findAll({
       attributes: [
         'genero',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total']
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total'],
+        [sequelize.literal("COUNT(CASE WHEN forma_parte_comite = true THEN 1 END)"), 'con_comite'],
+        [sequelize.literal("COUNT(CASE WHEN participa_asambleas = true THEN 1 END)"), 'en_asambleas']
       ],
       where: {
         genero: { [Op.ne]: null }
       },
       group: ['genero'],
-      order: [[sequelize.literal('total'), 'DESC']]
+      order: [[sequelize.literal('total'), 'DESC']],
+      raw: true
+    });
+
+    // Comparativa por Tipo de Personal
+    const porTipoPersonal = await RegistroConsejoComunal.findAll({
+      attributes: [
+        'tipo_personal',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total'],
+        [sequelize.literal("COUNT(CASE WHEN forma_parte_comite = true THEN 1 END)"), 'con_comite'],
+        [sequelize.literal("COUNT(CASE WHEN participa_asambleas = true THEN 1 END)"), 'en_asambleas']
+      ],
+      group: ['tipo_personal'],
+      order: [[sequelize.literal('total'), 'DESC']],
+      raw: true
+    });
+
+    // Comparativa Territorial Municipal
+    const porMunicipio = await RegistroConsejoComunal.findAll({
+      attributes: [
+        'municipio',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total'],
+        [sequelize.literal("COUNT(CASE WHEN forma_parte_comite = true THEN 1 END)"), 'con_comite'],
+        [sequelize.literal("COUNT(CASE WHEN participa_asambleas = true THEN 1 END)"), 'en_asambleas']
+      ],
+      group: ['municipio'],
+      order: [[sequelize.literal('total'), 'DESC']],
+      raw: true
+    });
+
+    // Top Comités / Vocerías más representadas
+    const porComite = await RegistroConsejoComunal.findAll({
+      attributes: [
+        'comite',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total']
+      ],
+      where: {
+        forma_parte_comite: true,
+        comite: { [Op.ne]: null }
+      },
+      group: ['comite'],
+      order: [[sequelize.literal('total'), 'DESC']],
+      limit: 15,
+      raw: true
+    });
+
+    // Top 10 Instituciones Educativas con mayor activación
+    const topInstituciones = await RegistroConsejoComunal.findAll({
+      attributes: [
+        'institucion_educativa',
+        'municipio',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total'],
+        [sequelize.literal("COUNT(CASE WHEN forma_parte_comite = true THEN 1 END)"), 'con_comite']
+      ],
+      where: {
+        institucion_educativa: { [Op.ne]: null }
+      },
+      group: ['institucion_educativa', 'municipio'],
+      order: [[sequelize.literal('total'), 'DESC']],
+      limit: 10,
+      raw: true
+    });
+
+    // Métricas Territoriales
+    const totalComunidades = await RegistroConsejoComunal.count({
+      distinct: true,
+      col: 'comunidad'
+    });
+    const totalCircuitos = await RegistroConsejoComunal.count({
+      distinct: true,
+      col: 'circuito_comunal',
+      where: { circuito_comunal: { [Op.ne]: null } }
+    });
+    const totalComunas = await RegistroConsejoComunal.count({
+      distinct: true,
+      col: 'comuna',
+      where: { comuna: { [Op.ne]: null } }
     });
 
     return res.json({
       totalRegistros,
       conComite,
       enAsambleas,
+      compromiso: {
+        pleno: ambos,
+        soloAsamblea,
+        soloComite,
+        pasivo
+      },
+      estadisticasEdad,
+      rangosEdad,
       porMunicipio,
       porTipoPersonal,
-      porGenero
+      porGenero,
+      porComite,
+      topInstituciones,
+      coberturaTerritorial: {
+        municipiosActivos: porMunicipio.length,
+        totalComunidades,
+        totalCircuitos,
+        totalComunas
+      }
     });
   } catch (error) {
     console.error('Error al obtener estadísticas comunales:', error);
@@ -349,7 +499,7 @@ exports.listarRegistros = async (req, res) => {
 
 /**
  * GET /api/consejos-comunales/export/excel
- * Exportación completa a Excel formateado con ExcelJS
+ * Exportación completa a Excel profesional multi-hoja con comparativas y métricas estadísticas
  */
 exports.exportarExcel = async (req, res) => {
   try {
@@ -388,22 +538,331 @@ exports.exportarExcel = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Sala Situacional CDCE ESTADAL GUÁRICO';
-    workbook.title = 'Participación Comunal - Sala Situacional CDCE ESTADAL GUÁRICO';
-    const worksheet = workbook.addWorksheet('Participación Comunal', {
+    workbook.created = new Date();
+
+    // =========================================================================
+    // HOJA 1: RESUMEN EJECUTIVO, ESTADÍSTICAS Y COMPARATIVAS MULTIDIMENSIONALES
+    // =========================================================================
+    const wsResumen = workbook.addWorksheet('Resumen & Comparativas', {
       views: [{ showGridLines: true }]
     });
 
-    worksheet.columns = [
+    wsResumen.columns = [
+      { width: 5 },  // A
+      { width: 32 }, // B
+      { width: 18 }, // C
+      { width: 18 }, // D
+      { width: 18 }, // E
+      { width: 22 }, // F
+      { width: 5 }   // G
+    ];
+
+    // Estilos reutilizables
+    const headerBlueFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    const sectionFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    const subheaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+    const thinBorder = {
+      top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+    };
+
+    // Título Principal
+    wsResumen.mergeCells('B2:F2');
+    const titleCell = wsResumen.getCell('B2');
+    titleCell.value = 'SALA SITUACIONAL CDCE ESTADAL GUÁRICO';
+    titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = headerBlueFill;
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    wsResumen.getRow(2).height = 30;
+
+    wsResumen.mergeCells('B3:F3');
+    const subTitleCell = wsResumen.getCell('B3');
+    subTitleCell.value = 'INFORME ESTADÍSTICO INTEGRAL Y COMPARATIVO - SECTOR EDUCATIVO EN COMUNAS';
+    subTitleCell.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+    subTitleCell.fill = subheaderFill;
+    subTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    wsResumen.getRow(3).height = 22;
+
+    // Metadatos
+    wsResumen.mergeCells('B4:F4');
+    const metaCell = wsResumen.getCell('B4');
+    metaCell.value = `Generado: ${new Date().toLocaleString('es-VE')} | Registros Analizados: ${registros.length}`;
+    metaCell.font = { italic: true, size: 10, color: { argb: 'FF475569' } };
+    metaCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    wsResumen.getRow(4).height = 20;
+
+    // --- CÁLCULOS ANALÍTICOS Y ESTADÍSTICOS ---
+    const totalRegs = registros.length;
+    const conComiteCount = registros.filter((r) => r.forma_parte_comite).length;
+    const enAsambleasCount = registros.filter((r) => r.participa_asambleas).length;
+    const ambosCount = registros.filter((r) => r.forma_parte_comite && r.participa_asambleas).length;
+
+    const edadesValidas = registros
+      .map((r) => Number(r.edad))
+      .filter((e) => !isNaN(e) && e > 0);
+
+    const edadMedia = edadesValidas.length > 0 ? Number(ss.mean(edadesValidas).toFixed(1)) : 0;
+    const edadMediana = edadesValidas.length > 0 ? Number(ss.median(edadesValidas).toFixed(1)) : 0;
+    const edadStd = edadesValidas.length > 1 ? Number(ss.standardDeviation(edadesValidas).toFixed(1)) : 0;
+    const edadMin = edadesValidas.length > 0 ? ss.min(edadesValidas) : 0;
+    const edadMax = edadesValidas.length > 0 ? ss.max(edadesValidas) : 0;
+    const edadQ1 = edadesValidas.length > 0 ? Number(ss.quantile(edadesValidas, 0.25).toFixed(1)) : 0;
+    const edadQ3 = edadesValidas.length > 0 ? Number(ss.quantile(edadesValidas, 0.75).toFixed(1)) : 0;
+
+    // SECCIÓN 1: KPIs
+    let curRow = 6;
+    wsResumen.mergeCells(`B${curRow}:F${curRow}`);
+    const sec1 = wsResumen.getCell(`B${curRow}`);
+    sec1.value = '1. INDICADORES CLAVE DE PARTICIPACIÓN POPULAR (KPIs)';
+    sec1.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    sec1.fill = sectionFill;
+    sec1.alignment = { vertical: 'middle', indent: 1 };
+    wsResumen.getRow(curRow).height = 24;
+    curRow++;
+
+    const kpiHeaders = ['Métrica / Indicador', 'Valor Nominal', 'Tasa / Porcentaje', 'Observación'];
+    wsResumen.mergeCells(`E${curRow}:F${curRow}`);
+    const rowKpiH = wsResumen.getRow(curRow);
+    rowKpiH.values = [, kpiHeaders[0], kpiHeaders[1], kpiHeaders[2], kpiHeaders[3]];
+    rowKpiH.font = { bold: true, size: 10, color: { argb: 'FF1E293B' } };
+    rowKpiH.height = 20;
+    curRow++;
+
+    const kpiData = [
+      ['Total Personal Registrado', totalRegs, '100.0%', 'Base muestral del sector educativo'],
+      ['Pertenencia a Comités / Vocerías', conComiteCount, totalRegs > 0 ? `${((conComiteCount / totalRegs) * 100).toFixed(1)}%` : '0%', 'Liderazgo directo en el Consejo Comunal'],
+      ['Participación en Asambleas de Ciudadanos', enAsambleasCount, totalRegs > 0 ? `${((enAsambleasCount / totalRegs) * 100).toFixed(1)}%` : '0%', 'Poder popular y toma de decisiones'],
+      ['Compromiso Pleno (Comité + Asambleas)', ambosCount, totalRegs > 0 ? `${((ambosCount / totalRegs) * 100).toFixed(1)}%` : '0%', 'Militancia y activación comunal integral']
+    ];
+
+    kpiData.forEach((d) => {
+      wsResumen.mergeCells(`E${curRow}:F${curRow}`);
+      const r = wsResumen.getRow(curRow);
+      r.values = [, d[0], d[1], d[2], d[3]];
+      r.font = { size: 10 };
+      r.alignment = { vertical: 'middle' };
+      r.getCell(3).alignment = { horizontal: 'center' };
+      r.getCell(4).alignment = { horizontal: 'center' };
+      curRow++;
+    });
+
+    // SECCIÓN 2: ESTADÍSTICAS DESCRIPTIVAS DE EDAD (LIBRERÍA ESTADÍSTICA)
+    curRow += 1;
+    wsResumen.mergeCells(`B${curRow}:F${curRow}`);
+    const sec2 = wsResumen.getCell(`B${curRow}`);
+    sec2.value = '2. ESTADÍSTICAS DESCRIPTIVAS DE EDAD (ANÁLISIS PARAMÉTRICO Y PERCENTILES)';
+    sec2.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    sec2.fill = sectionFill;
+    sec2.alignment = { vertical: 'middle', indent: 1 };
+    wsResumen.getRow(curRow).height = 24;
+    curRow++;
+
+    const edadRows = [
+      ['Media Aritmética (Promedio de Edad)', `${edadMedia} años`, 'Desviación Estándar (σ)', `±${edadStd} años`],
+      ['Mediana (Q2 - 50% de la población)', `${edadMediana} años`, 'Rango Intercuartil (Q3 - Q1)', `${(edadQ3 - edadQ1).toFixed(1)} años`],
+      ['Edad Mínima Registrada', `${edadMin} años`, 'Primer Cuartil (Q1 - 25%)', `${edadQ1} años`],
+      ['Edad Máxima Registrada', `${edadMax} años`, 'Tercer Cuartil (Q3 - 75%)', `${edadQ3} años`]
+    ];
+
+    edadRows.forEach((er) => {
+      wsResumen.mergeCells(`E${curRow}:F${curRow}`);
+      const r = wsResumen.getRow(curRow);
+      r.values = [, er[0], er[1], er[2], er[3]];
+      r.font = { size: 10 };
+      r.getCell(2).font = { bold: true, color: { argb: 'FF334155' } };
+      r.getCell(4).font = { bold: true, color: { argb: 'FF334155' } };
+      r.getCell(3).alignment = { horizontal: 'center' };
+      r.getCell(5).alignment = { horizontal: 'center' };
+      curRow++;
+    });
+
+    // SECCIÓN 3: COMPARATIVA GÉNERO VS COMITÉS
+    curRow += 1;
+    wsResumen.mergeCells(`B${curRow}:F${curRow}`);
+    const sec3 = wsResumen.getCell(`B${curRow}`);
+    sec3.value = '3. COMPARATIVA CRUZADA: GÉNERO VS LIDERAZGO EN COMITÉS Y ASAMBLEAS';
+    sec3.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    sec3.fill = sectionFill;
+    sec3.alignment = { vertical: 'middle', indent: 1 };
+    wsResumen.getRow(curRow).height = 24;
+    curRow++;
+
+    const rowGenH = wsResumen.getRow(curRow);
+    rowGenH.values = [, 'Género', 'Total Registros', 'En Comités', 'En Asambleas', 'Tasa Vocería (%)'];
+    rowGenH.font = { bold: true, size: 10, color: { argb: 'FF1E293B' } };
+    rowGenH.alignment = { horizontal: 'center', vertical: 'middle' };
+    rowGenH.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+    curRow++;
+
+    const generosSet = ['Mujer', 'Hombre'];
+    generosSet.forEach((g) => {
+      const gRegs = registros.filter((r) => r.genero === g);
+      const gTotal = gRegs.length;
+      const gCom = gRegs.filter((r) => r.forma_parte_comite).length;
+      const gAsam = gRegs.filter((r) => r.participa_asambleas).length;
+      const gPct = gTotal > 0 ? `${((gCom / gTotal) * 100).toFixed(1)}%` : '0.0%';
+
+      const r = wsResumen.getRow(curRow);
+      r.values = [, g, gTotal, gCom, gAsam, gPct];
+      r.font = { size: 10 };
+      r.alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+      curRow++;
+    });
+
+    // SECCIÓN 4: COMPARATIVA RANGOS ETARIOS
+    curRow += 1;
+    wsResumen.mergeCells(`B${curRow}:F${curRow}`);
+    const sec4 = wsResumen.getCell(`B${curRow}`);
+    sec4.value = '4. COMPARATIVA POR RANGOS ETARIOS';
+    sec4.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    sec4.fill = sectionFill;
+    sec4.alignment = { vertical: 'middle', indent: 1 };
+    wsResumen.getRow(curRow).height = 24;
+    curRow++;
+
+    const rowEdadH = wsResumen.getRow(curRow);
+    rowEdadH.values = [, 'Rango Etario', 'Total Registros', 'En Comités', 'En Asambleas', 'Tasa Vocería (%)'];
+    rowEdadH.font = { bold: true, size: 10, color: { argb: 'FF1E293B' } };
+    rowEdadH.alignment = { horizontal: 'center', vertical: 'middle' };
+    rowEdadH.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+    curRow++;
+
+    const gruposEtarios = [
+      { nombre: '15-29 (Juventud)', min: 15, max: 29 },
+      { nombre: '30-45 (Adulto Joven)', min: 30, max: 45 },
+      { nombre: '46-59 (Adulto Maduro)', min: 46, max: 59 },
+      { nombre: '60+ (Adulto Mayor)', min: 60, max: 120 }
+    ];
+
+    gruposEtarios.forEach((grp) => {
+      const eRegs = registros.filter((r) => r.edad >= grp.min && r.edad <= grp.max);
+      const eTotal = eRegs.length;
+      const eCom = eRegs.filter((r) => r.forma_parte_comite).length;
+      const eAsam = eRegs.filter((r) => r.participa_asambleas).length;
+      const ePct = eTotal > 0 ? `${((eCom / eTotal) * 100).toFixed(1)}%` : '0.0%';
+
+      const r = wsResumen.getRow(curRow);
+      r.values = [, grp.nombre, eTotal, eCom, eAsam, ePct];
+      r.font = { size: 10 };
+      r.alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+      curRow++;
+    });
+
+    // SECCIÓN 5: COMPARATIVA POR TIPO DE PERSONAL
+    curRow += 1;
+    wsResumen.mergeCells(`B${curRow}:F${curRow}`);
+    const sec5 = wsResumen.getCell(`B${curRow}`);
+    sec5.value = '5. COMPARATIVA POR TIPO DE PERSONAL EDUCATIVO';
+    sec5.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    sec5.fill = sectionFill;
+    sec5.alignment = { vertical: 'middle', indent: 1 };
+    wsResumen.getRow(curRow).height = 24;
+    curRow++;
+
+    const rowRolH = wsResumen.getRow(curRow);
+    rowRolH.values = [, 'Rol / Función', 'Total Registros', 'En Comités', 'En Asambleas', 'Tasa Vocería (%)'];
+    rowRolH.font = { bold: true, size: 10, color: { argb: 'FF1E293B' } };
+    rowRolH.alignment = { horizontal: 'center', vertical: 'middle' };
+    rowRolH.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+    curRow++;
+
+    const rolesMap = {};
+    registros.forEach((r) => {
+      const rol = r.tipo_personal || 'Sin Asignar';
+      if (!rolesMap[rol]) rolesMap[rol] = { total: 0, comite: 0, asamblea: 0 };
+      rolesMap[rol].total++;
+      if (r.forma_parte_comite) rolesMap[rol].comite++;
+      if (r.participa_asambleas) rolesMap[rol].asamblea++;
+    });
+
+    Object.entries(rolesMap).forEach(([rol, datos]) => {
+      const rPct = datos.total > 0 ? `${((datos.comite / datos.total) * 100).toFixed(1)}%` : '0.0%';
+      const r = wsResumen.getRow(curRow);
+      r.values = [, rol, datos.total, datos.comite, datos.asamblea, rPct];
+      r.font = { size: 10 };
+      r.alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+      curRow++;
+    });
+
+    // =========================================================================
+    // HOJA 2: CONSOLIDADO MUNICIPAL (MATRIZ TERRITORIAL)
+    // =========================================================================
+    const wsMunicipal = workbook.addWorksheet('Consolidado Municipal', {
+      views: [{ showGridLines: true }]
+    });
+
+    wsMunicipal.columns = [
+      { header: '#', key: 'idx', width: 6 },
+      { header: 'Municipio', key: 'municipio', width: 26 },
+      { header: 'Total Registrados', key: 'total', width: 18 },
+      { header: 'Voceros en Comité', key: 'comite', width: 18 },
+      { header: 'Participan en Asambleas', key: 'asamblea', width: 22 },
+      { header: 'Tasa de Vocería (%)', key: 'tasa', width: 20 },
+      { header: '% Aporte al Estado', key: 'aporte', width: 20 }
+    ];
+
+    const mHeader = wsMunicipal.getRow(1);
+    mHeader.height = 26;
+    mHeader.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.fill = headerBlueFill;
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+
+    const muniMap = {};
+    registros.forEach((r) => {
+      const m = r.municipio || 'Sin Municipio';
+      if (!muniMap[m]) muniMap[m] = { total: 0, comite: 0, asamblea: 0 };
+      muniMap[m].total++;
+      if (r.forma_parte_comite) muniMap[m].comite++;
+      if (r.participa_asambleas) muniMap[m].asamblea++;
+    });
+
+    const ordenMunicipios = Object.entries(muniMap).sort((a, b) => b[1].total - a[1].total);
+    ordenMunicipios.forEach(([muni, d], i) => {
+      const tasa = d.total > 0 ? ((d.comite / d.total) * 100).toFixed(1) + '%' : '0.0%';
+      const aporte = totalRegs > 0 ? ((d.total / totalRegs) * 100).toFixed(1) + '%' : '0.0%';
+      const r = wsMunicipal.addRow({
+        idx: i + 1,
+        municipio: muni,
+        total: d.total,
+        comite: d.comite,
+        asamblea: d.asamblea,
+        tasa,
+        aporte
+      });
+      r.alignment = { vertical: 'middle' };
+      r.getCell(1).alignment = { horizontal: 'center' };
+      r.getCell(3).alignment = { horizontal: 'center' };
+      r.getCell(4).alignment = { horizontal: 'center' };
+      r.getCell(5).alignment = { horizontal: 'center' };
+      r.getCell(6).alignment = { horizontal: 'center' };
+      r.getCell(7).alignment = { horizontal: 'center' };
+    });
+
+    // =========================================================================
+    // HOJA 3: DETALLE NOMINAL COMPLETO (BASE DE DATOS AUDITABLE)
+    // =========================================================================
+    const wsDetalle = workbook.addWorksheet('Detalle de Registros', {
+      views: [{ showGridLines: true }]
+    });
+
+    wsDetalle.columns = [
       { header: '#', key: 'index', width: 6 },
       { header: 'Cédula', key: 'cedula', width: 14 },
       { header: 'Nombres y Apellidos', key: 'nombres_apellidos', width: 32 },
       { header: 'Teléfono', key: 'telefono', width: 16 },
-      { header: 'Género', key: 'genero', width: 14 },
-      { header: 'Edad', key: 'edad', width: 10 },
+      { header: 'Género', key: 'genero', width: 12 },
+      { header: 'Edad', key: 'edad', width: 8 },
       { header: 'Tipo Personal', key: 'tipo_personal', width: 22 },
       { header: 'Detalle Personal', key: 'tipo_personal_detalle', width: 26 },
-      { header: 'Institución Educativa', key: 'institucion_educativa', width: 30 },
-      { header: 'Municipio', key: 'municipio', width: 20 },
+      { header: 'Institución Educativa', key: 'institucion_educativa', width: 34 },
+      { header: 'Municipio', key: 'municipio', width: 22 },
       { header: 'Parroquia', key: 'parroquia', width: 22 },
       { header: 'Comunidad / Sector', key: 'comunidad', width: 30 },
       { header: 'Circuito Comunal', key: 'circuito_comunal', width: 22 },
@@ -415,17 +874,17 @@ exports.exportarExcel = async (req, res) => {
       { header: 'Fecha Registro', key: 'fecha', width: 18 }
     ];
 
-    const headerRow = worksheet.getRow(1);
-    headerRow.height = 26;
-    headerRow.eachCell((cell) => {
+    const dHeader = wsDetalle.getRow(1);
+    dHeader.height = 26;
+    dHeader.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+      cell.fill = headerBlueFill;
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
     });
 
     registros.forEach((reg, i) => {
       const fechaRegistro = reg.created_at || reg.createdAt;
-      const row = worksheet.addRow({
+      const row = wsDetalle.addRow({
         index: i + 1,
         cedula: `${reg.nacionalidad}-${reg.cedula}`,
         nombres_apellidos: reg.nombres_apellidos,
@@ -447,10 +906,23 @@ exports.exportarExcel = async (req, res) => {
         fecha: fechaRegistro ? new Date(fechaRegistro).toLocaleDateString('es-VE') : 'N/A'
       });
       row.alignment = { vertical: 'middle' };
+      row.getCell(1).alignment = { horizontal: 'center' };
+      row.getCell(2).alignment = { horizontal: 'center' };
+      row.getCell(5).alignment = { horizontal: 'center' };
+      row.getCell(6).alignment = { horizontal: 'center' };
+      row.getCell(15).alignment = { horizontal: 'center' };
+      row.getCell(16).alignment = { horizontal: 'center' };
+      row.getCell(19).alignment = { horizontal: 'center' };
     });
 
+    // Filtros automáticos en Detalle
+    wsDetalle.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: registros.length + 1, column: 19 }
+    };
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="Reporte_Consejos_Comunales.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="Reporte_Estadistico_Consejos_Comunales_CDCE.xlsx"');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
     const buffer = await workbook.xlsx.writeBuffer();
