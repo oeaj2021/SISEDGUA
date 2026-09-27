@@ -50,9 +50,11 @@ export default function Navbar() {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             {/* Logo / Título Consejos Comunales */}
             <NavLink to="/consejos-comunales" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-white text-blue-900 flex items-center justify-center text-xl font-black shadow-sm group-hover:bg-blue-50 transition-colors">
-                🏛️
-              </div>
+              <img
+                src="/cde-guarico-logo.png"
+                alt="CDCE Guárico"
+                className="h-10 w-auto object-contain filter drop-shadow-md group-hover:scale-105 transition-transform"
+              />
               <div>
                 <span className="font-black text-white text-base sm:text-lg tracking-tight block leading-tight">
                   Consejos Comunales
@@ -203,9 +205,11 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Identidad / Logo */}
           <NavLink to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-white text-blue-900 flex items-center justify-center text-xl font-black shadow-sm group-hover:bg-blue-50 transition-colors">
-              🏫
-            </div>
+            <img
+              src="/cde-guarico-logo.png"
+              alt="CDCE Guárico"
+              className="h-10 w-auto object-contain filter drop-shadow-md group-hover:scale-105 transition-transform"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-white text-base sm:text-lg tracking-tight">

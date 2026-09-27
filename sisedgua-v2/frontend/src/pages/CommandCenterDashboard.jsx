@@ -42,17 +42,24 @@ export default function CommandCenterDashboard() {
   return (
     <div className="min-h-screen bg-zonal-navy text-slate-100 p-6 md:p-10 space-y-8">
       {/* Top Bar / Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-white">
-              SISEDGUA <span className="text-guarico-gold font-mono text-sm px-2 py-0.5 rounded-lg bg-guarico-gold/15">v2.0 HUD</span>
-            </h1>
-            <PulsingBeacon active={true} label="SALA SITUACIONAL GUÁRICO" />
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <img
+            src="/cde-guarico-logo.png"
+            alt="CDCE Guárico"
+            className="h-12 w-auto object-contain filter drop-shadow-md"
+          />
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                SISEDGUA <span className="text-guarico-gold font-mono text-sm px-2 py-0.5 rounded-lg bg-guarico-gold/15">v2.0 HUD</span>
+              </h1>
+              <PulsingBeacon active={true} label="SALA SITUACIONAL GUÁRICO" />
+            </div>
+            <p className="text-xs text-slate-400 mt-1 font-medium">
+              Zona Educativa Guárico — Monitoreo de Matrícula y Soberanía Alimentaria Escolar
+            </p>
           </div>
-          <p className="text-xs text-slate-400 mt-1 font-medium">
-            Zona Educativa Guárico — Monitoreo de Matrícula y Soberanía Alimentaria Escolar
-          </p>
         </div>
 
         {/* Tactical Controls & Filters */}

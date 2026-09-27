@@ -42,8 +42,12 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-blue-50 text-blue-700 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-blue-200 shadow-xs">
-            {esComuc ? '🏛️' : '🏫'}
+          <div className="p-3.5 bg-gradient-to-br from-blue-950 to-blue-900 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-800 shadow-md w-fit">
+            <img
+              src="/cde-guarico-logo.png"
+              alt="CDCE Guárico"
+              className="h-16 w-auto object-contain filter drop-shadow-md"
+            />
           </div>
           <span className="text-[11px] font-bold tracking-wider text-blue-700 uppercase block mb-1">
             Sala Situacional CDCE ESTADAL GUÁRICO

@@ -214,16 +214,21 @@ export default function RegistroConsejoComunal() {
   return (
     <div className="min-h-screen bg-slate-100 py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        {/* Cabecera Oficial Institucional */}
-        <header className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 mb-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-bold rounded-full uppercase tracking-wider mb-3">
-            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+        {/* Cabecera Oficial Institucional con Banner Translúcido */}
+        <header className="bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 rounded-2xl p-6 sm:p-8 shadow-md border border-blue-800 mb-6 text-center text-white">
+          <img
+            src="/cde-guarico-banner.png"
+            alt="Centro de Desarrollo de la Calidad Educativa Guárico"
+            className="h-12 sm:h-16 w-auto mx-auto object-contain mb-4 filter drop-shadow-md"
+          />
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-800/80 text-blue-100 text-xs font-bold rounded-full uppercase tracking-wider mb-3 border border-blue-700/60 shadow-inner">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
             Sala Situacional CDCE ESTADAL GUÁRICO
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug">
             Sector Educativo Participa en Consejos Comunales
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+          <p className="mt-2 text-sm sm:text-base text-blue-200 max-w-xl mx-auto font-medium">
             Instrumento oficial de captación y vinculación del personal educativo en las estructuras del Poder Popular.
           </p>
         </header>

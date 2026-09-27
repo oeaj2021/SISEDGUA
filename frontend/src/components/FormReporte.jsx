@@ -161,10 +161,12 @@ export default function FormReporte({ turno }) {
     <div className="min-h-screen bg-slate-100 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Cabecera Institucional en Azul Real Sólido */}
-        <div className="bg-blue-900 text-white rounded-t-2xl p-6 sm:p-8 border border-blue-950 text-center shadow-md">
-          <span className="inline-block text-[11px] font-bold tracking-wider text-blue-200 uppercase px-3 py-1 rounded-full bg-blue-950 border border-blue-800 mb-3">
-            República Bolivariana de Venezuela · MPPE
-          </span>
+        <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 text-white rounded-t-2xl p-6 sm:p-8 border border-blue-950 text-center shadow-md">
+          <img
+            src="/cde-guarico-banner.png"
+            alt="Centro de Desarrollo de la Calidad Educativa Guárico"
+            className="h-12 sm:h-16 w-auto mx-auto object-contain mb-4 filter drop-shadow-md"
+          />
 
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-xs">
             SALA SITUACIONAL CDCE ESTADAL GUÁRICO
