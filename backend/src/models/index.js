@@ -4,6 +4,7 @@ const Admin = require('./Admin');
 const Institucion = require('./Institucion');
 const CapacidadMunicipio = require('./CapacidadMunicipio');
 const RegistroConsejoComunal = require('./RegistroConsejoComunal');
+const PadronPersonal = require('./PadronPersonal');
 
 Reporte.belongsTo(Institucion, { foreignKey: 'institucion_id', as: 'institucion' });
 Institucion.hasMany(Reporte, { foreignKey: 'institucion_id', as: 'reportes' });
@@ -26,5 +27,6 @@ module.exports = {
   Institucion,
   CapacidadMunicipio,
   RegistroConsejoComunal,
+  PadronPersonal,
   syncDatabase
 };

@@ -45,4 +45,13 @@ export const getConsejosComunales = (params) => api.get('/consejos-comunales', {
 export const exportConsejosComunalesExcel = (params) =>
   api.get('/consejos-comunales/export/excel', { params, responseType: 'blob' });
 
+// Padrón Personal Educativo (Autocompletado & Carga Masiva)
+export const consultarPadron = (nacionalidad, cedula) =>
+  api.get(`/padron/consulta/${nacionalidad}/${cedula}`);
+export const getPadron = (params) => api.get('/padron', { params });
+export const createPadronManual = (data) => api.post('/padron/manual', data);
+export const uploadPadronMasivo = (data) => api.post('/padron/masivo', data);
+export const deletePadron = (id) => api.delete(`/padron/${id}`);
+export const getPadronStats = () => api.get('/padron/stats');
+
 export default api;

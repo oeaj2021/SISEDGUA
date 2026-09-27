@@ -1,4 +1,4 @@
-const { RegistroConsejoComunal, sequelize } = require('../models');
+const { RegistroConsejoComunal, PadronPersonal, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const ExcelJS = require('exceljs');
 

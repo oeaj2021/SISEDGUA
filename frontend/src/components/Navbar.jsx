@@ -259,12 +259,6 @@ export default function Navbar() {
               )}
             </NavLink>
 
-            {/* Consejos Comunales */}
-            <NavLink to="/consejos-comunales" className={navLinkClass}>
-              <span>🏛️</span>
-              <span>Consejos Comunales</span>
-            </NavLink>
-
             <div className="h-5 w-px bg-blue-800 mx-1"></div>
 
             {/* Login / Dashboard */}
@@ -273,7 +267,7 @@ export default function Navbar() {
                 <NavLink
                   to="/dashboard"
                   className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    `flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
                       isActive
                         ? 'bg-white text-blue-900 shadow-sm'
                         : 'bg-blue-800 text-white hover:bg-blue-700'
@@ -281,21 +275,7 @@ export default function Navbar() {
                   }
                 >
                   <span>📊</span>
-                  <span>Asistencia</span>
-                </NavLink>
-
-                <NavLink
-                  to="/consejos-comunales/registros"
-                  className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                      isActive
-                        ? 'bg-white text-blue-900 shadow-sm'
-                        : 'bg-blue-800 text-white hover:bg-blue-700'
-                    }`
-                  }
-                >
-                  <span>🏛️</span>
-                  <span>Comunales</span>
+                  <span>Panel Admin</span>
                 </NavLink>
 
                 <button
@@ -383,42 +363,23 @@ export default function Navbar() {
               )}
             </NavLink>
 
-            <NavLink
-              to="/consejos-comunales"
-              onClick={() => setMenuAbierto(false)}
-              className={navLinkClass}
-            >
-              <span>🏛️</span>
-              <span className="flex-1">Consejos Comunales</span>
-            </NavLink>
-
             <div className="border-t border-blue-800 pt-2">
               {isAuthenticated ? (
                 <div className="space-y-1.5">
-                  <div className="flex gap-2">
-                    <NavLink
-                      to="/dashboard"
-                      onClick={() => setMenuAbierto(false)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-white text-blue-900"
-                    >
-                      <span>📊</span>
-                      <span>Asistencia</span>
-                    </NavLink>
-                    <NavLink
-                      to="/consejos-comunales/registros"
-                      onClick={() => setMenuAbierto(false)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-white text-blue-900"
-                    >
-                      <span>🏛️</span>
-                      <span>Comunales</span>
-                    </NavLink>
-                  </div>
+                  <NavLink
+                    to="/dashboard"
+                    onClick={() => setMenuAbierto(false)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-white text-blue-900"
+                  >
+                    <span>📊</span>
+                    <span>Panel Admin</span>
+                  </NavLink>
                   <button
                     onClick={() => {
                       setMenuAbierto(false);
                       handleCerrarSesion();
                     }}
-                    className="w-full py-2 rounded-lg bg-blue-950 text-white text-xs font-bold"
+                    className="w-full py-2 bg-blue-950 text-white text-xs font-bold rounded-lg"
                   >
                     Cerrar Sesión
                   </button>

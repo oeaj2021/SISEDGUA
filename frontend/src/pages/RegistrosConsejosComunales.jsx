@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
+} from 'recharts';
+import {
   getConsejosComunales,
   getConsejosComunalesStats,
   exportConsejosComunalesExcel
 } from '../services/api';
 import { MUNICIPIOS_GUARICO } from '../utils/guaricoData';
+import GestionPadron from '../components/GestionPadron';
 
 export default function RegistrosConsejosComunales() {
+  const [tabActiva, setTabActiva] = useState('registros'); // 'registros' | 'estadisticas' | 'padron'
   const [registros, setRegistros] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -129,8 +134,50 @@ export default function RegistrosConsejosComunales() {
           </div>
         </div>
 
-        {/* Tarjetas KPI */}
-        {stats && (
+        {/* Barra de Pestañas de Navegación del Módulo */}
+        <div className="flex flex-wrap gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
+          <button
+            onClick={() => setTabActiva('registros')}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
+              tabActiva === 'registros'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>📋</span>
+            <span>Registros Comunitarios ({totalRegistros})</span>
+          </button>
+
+          <button
+            onClick={() => setTabActiva('estadisticas')}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
+              tabActiva === 'estadisticas'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>📊</span>
+            <span>Estadísticas y Gráficos</span>
+          </button>
+
+          <button
+            onClick={() => setTabActiva('padron')}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer flex items-center gap-2 ${
+              tabActiva === 'padron'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span>👥</span>
+            <span>Gestión de Padrón (Cédulas)</span>
+          </button>
+        </div>
+
+        {/* PESTAÑA 1: REGISTROS COMUNITARIOS */}
+        {tabActiva === 'registros' && (
+          <div className="space-y-6">
+            {/* Tarjetas KPI */}
+            {stats && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
@@ -386,8 +433,174 @@ export default function RegistrosConsejosComunales() {
             </div>
           )}
         </div>
+      </div>
+    )}
 
-        {/* Modal de Ficha Detallada */}
+    {/* PESTAÑA 2: ESTADÍSTICAS Y GRÁFICOS */}
+    {tabActiva === 'estadisticas' && (
+      <div className="space-y-6">
+        {/* KPI Cards */}
+        {stats && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                Total Registrados
+              </span>
+              <p className="text-3xl font-black text-blue-900 mt-2">{stats.totalRegistros || 0}</p>
+              <span className="text-[11px] text-slate-400 mt-1 block">Sector Educativo Guárico</span>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                En Asambleas
+              </span>
+              <p className="text-3xl font-black text-indigo-700 mt-2">{stats.enAsambleas || 0}</p>
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                {stats.totalRegistros > 0 ? ((stats.enAsambleas / stats.totalRegistros) * 100).toFixed(1) : 0}% de participación
+              </span>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                Voceros en Comité
+              </span>
+              <p className="text-3xl font-black text-emerald-700 mt-2">{stats.conComite || 0}</p>
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                {stats.totalRegistros > 0 ? ((stats.conComite / stats.totalRegistros) * 100).toFixed(1) : 0}% con vocería activa
+              </span>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                Municipios Activos
+              </span>
+              <p className="text-3xl font-black text-amber-700 mt-2">
+                {stats.porMunicipio ? stats.porMunicipio.length : 0} / 15
+              </p>
+              <span className="text-[11px] text-slate-400 mt-1 block">Cobertura Territorial</span>
+            </div>
+          </div>
+        )}
+
+        {/* Gráficos Recharts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Gráfico 1: Participación por Municipio */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 mb-4 flex items-center gap-2">
+              <span>📍</span> Participación por Municipio
+            </h3>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(stats?.porMunicipio || []).map((m) => ({
+                    municipio: m.municipio,
+                    Total: Number(m.total)
+                  }))}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 40 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="municipio"
+                    angle={-45}
+                    textAnchor="end"
+                    interval={0}
+                    tick={{ fontSize: 10, fill: '#64748b' }}
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      border: 'none',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Bar dataKey="Total" fill="#2563eb" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Gráfico 2: Participación por Tipo de Personal */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 mb-4 flex items-center gap-2">
+              <span>👥</span> Distribución por Tipo de Personal
+            </h3>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(stats?.porTipoPersonal || []).map((t) => ({
+                    tipo: t.tipo_personal || 'Sin asignar',
+                    Total: Number(t.total)
+                  }))}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 40 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="tipo"
+                    angle={-40}
+                    textAnchor="end"
+                    interval={0}
+                    tick={{ fontSize: 10, fill: '#64748b' }}
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      border: 'none',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Bar dataKey="Total" fill="#059669" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabla Resumen de Municipios */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
+            <span>📋</span> Consolidado Municipal en Consejos Comunales
+          </h3>
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] tracking-wider">
+                <tr>
+                  <th className="px-4 py-2.5">Municipio</th>
+                  <th className="px-4 py-2.5 text-center">Registrados</th>
+                  <th className="px-4 py-2.5 text-center">Porcentaje (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(stats?.porMunicipio || []).map((m) => {
+                  const pct = stats.totalRegistros > 0
+                    ? ((Number(m.total) / stats.totalRegistros) * 100).toFixed(1)
+                    : 0;
+                  return (
+                    <tr key={m.municipio} className="hover:bg-slate-50">
+                      <td className="px-4 py-2 font-bold text-slate-900">{m.municipio}</td>
+                      <td className="px-4 py-2 text-center font-bold text-blue-800">{m.total}</td>
+                      <td className="px-4 py-2 text-center">
+                        <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 font-bold rounded">
+                          {pct}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* PESTAÑA 3: GESTIÓN DE PADRÓN INSTITUCIONAL */}
+    {tabActiva === 'padron' && <GestionPadron />}
         {selectedItem && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 animate-fadeIn">

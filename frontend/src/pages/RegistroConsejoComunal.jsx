@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { MUNICIPIOS_GUARICO, COMITES_CONSEJO_COMUNAL } from '../utils/guaricoData';
 import { consejoComunalSchema } from '../schemas/consejoComunalSchema';
+import { consultarPadron } from '../services/api';
 
 export default function RegistroConsejoComunal() {
   const INITIAL_STATE = {
@@ -27,6 +28,56 @@ export default function RegistroConsejoComunal() {
   const [submitting, setSubmitting] = useState(false);
   const [modalSuccess, setModalSuccess] = useState(null);
   const [serverError, setServerError] = useState('');
+
+  // Estados para autocompletado inteligente mediante Padrón Institucional
+  const [cedulaBuscando, setCedulaBuscando] = useState(false);
+  const [cedulaVerificada, setCedulaVerificada] = useState(null);
+
+  useEffect(() => {
+    const cleanCed = form.cedula.trim();
+    if (cleanCed.length < 6) {
+      setCedulaVerificada(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCedulaBuscando(true);
+      try {
+        const res = await consultarPadron(form.nacionalidad, cleanCed);
+        if (res.data?.found && res.data?.persona) {
+          const persona = res.data.persona;
+          setForm((prev) => ({
+            ...prev,
+            nombres_apellidos: persona.nombres_apellidos || prev.nombres_apellidos,
+            tipo_personal: persona.tipo_personal || prev.tipo_personal,
+            municipio: persona.municipio || prev.municipio
+          }));
+          setCedulaVerificada({
+            encontrado: true,
+            nombre: persona.nombres_apellidos,
+            tipo: persona.tipo_personal
+          });
+          setErrors((prev) => ({
+            ...prev,
+            nombres_apellidos: undefined,
+            cedula: undefined
+          }));
+        } else {
+          setCedulaVerificada({
+            encontrado: false,
+            mensaje: 'No registrado en padrón previo (ingreso manual habilitado)'
+          });
+        }
+      } catch (err) {
+        console.warn('Consulta de padrón:', err.message);
+        setCedulaVerificada(null);
+      } finally {
+        setCedulaBuscando(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [form.cedula, form.nacionalidad]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -197,6 +248,28 @@ export default function RegistroConsejoComunal() {
                   />
                 </div>
                 {errors.cedula && <p className="text-xs text-red-600 mt-1 font-medium">{errors.cedula}</p>}
+                
+                {/* Retroalimentación de Búsqueda y Autocompletado */}
+                {cedulaBuscando && (
+                  <p className="text-xs text-blue-600 mt-1.5 flex items-center gap-1.5 font-medium animate-pulse">
+                    <span>🔄</span>
+                    <span>Verificando cédula en el padrón institucional...</span>
+                  </p>
+                )}
+                {!cedulaBuscando && cedulaVerificada?.encontrado && (
+                  <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-medium flex items-center gap-2">
+                    <span className="text-emerald-600 text-sm">✅</span>
+                    <span>
+                      <strong>Verificado:</strong> {cedulaVerificada.nombre} ({cedulaVerificada.tipo}) — Datos autocompletados
+                    </span>
+                  </div>
+                )}
+                {!cedulaBuscando && cedulaVerificada?.encontrado === false && form.cedula.length >= 6 && (
+                  <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1 font-medium">
+                    <span>ℹ️</span>
+                    <span>No figura en padrón previo. Por favor ingrese sus datos completos.</span>
+                  </p>
+                )}
               </div>
 
               {/* Teléfono de Contacto */}
