@@ -13,8 +13,12 @@ const syncDatabase = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Conexión a PostgreSQL establecida con éxito.');
-    await sequelize.sync({ alter: true });
-    console.log('✅ Tablas sincronizadas con PostgreSQL.');
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Tablas sincronizadas con PostgreSQL (Modo Desarrollo/Staging).');
+    } else {
+      console.log('ℹ️ Modo producción detectado: alter sync omitido para preservar integridad DDL.');
+    }
   } catch (error) {
     console.error('❌ Error al sincronizar con PostgreSQL:', error.message);
   }
