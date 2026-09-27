@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   getInstituciones,
   createInstitucion,
   updateInstitucion,
   deleteInstitucion,
   deleteInstitucionesBatch,
-  getCapacidadesMunicipios
+  getCapacidadesMunicipios,
+  exportInstitucionesExcel,
+  importInstitucionesExcel
 } from '../services/api';
 
 const MUNICIPIOS = [
@@ -33,6 +35,12 @@ export default function GestionInstituciones() {
   const [filtroTurno, setFiltroTurno] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(false);
+
+  // Estados de exportación e importación Excel
+  const [exportando, setExportando] = useState(false);
+  const [importando, setImportando] = useState(false);
+  const [resumenImport, setResumenImport] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Selección múltiple de filas para eliminación
   const [seleccionados, setSeleccionados] = useState([]);
@@ -169,6 +177,70 @@ export default function GestionInstituciones() {
     }
   };
 
+  const handleExportarExcel = async () => {
+    setExportando(true);
+    try {
+      const params = {};
+      if (filtroMunicipio) params.municipio = filtroMunicipio;
+      if (filtroTurno) params.turno = filtroTurno;
+      if (busqueda) params.search = busqueda;
+
+      const res = await exportInstitucionesExcel(params);
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Catalogo_Instituciones_Guarico.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error al exportar catálogo:', err);
+      alert('Error al descargar el catálogo en Excel.');
+    } finally {
+      setExportando(false);
+    }
+  };
+
+  const handleImportarExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      alert('Por favor seleccione un archivo Excel válido (.xlsx)');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setImportando(true);
+    setResumenImport(null);
+
+    const formData = new FormData();
+    formData.append('archivo', file);
+
+    try {
+      const res = await importInstitucionesExcel(formData);
+      setResumenImport({
+        tipo: 'exito',
+        mensaje: res.data?.mensaje || 'Instituciones importadas exitosamente.',
+        resumen: res.data?.resumen
+      });
+      cargarDatos();
+    } catch (err) {
+      console.error('Error al importar Excel:', err);
+      setResumenImport({
+        tipo: 'error',
+        mensaje: err.response?.data?.error || 'Error al procesar el archivo Excel.'
+      });
+    } finally {
+      setImportando(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Resumen de Capacidades Globales por Municipio */}
@@ -227,7 +299,7 @@ export default function GestionInstituciones() {
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {seleccionados.length > 0 && (
             <button
               type="button"
@@ -244,6 +316,35 @@ export default function GestionInstituciones() {
 
           <button
             type="button"
+            onClick={handleExportarExcel}
+            disabled={exportando}
+            className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-2.5 px-3.5 rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            title="Exportar catálogo filtrado a formato Excel"
+          >
+            <span>📥</span>
+            <span>{exportando ? 'Exportando...' : 'Exportar Catálogo (Excel)'}</span>
+          </button>
+
+          <label
+            className={`bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-3.5 rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer ${
+              importando ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title="Cargar archivo Excel para importar o actualizar planteles masivamente"
+          >
+            <span>📤</span>
+            <span>{importando ? 'Importando...' : 'Importar desde Excel'}</span>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportarExcel}
+              accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              disabled={importando}
+            />
+          </label>
+
+          <button
+            type="button"
             onClick={abrirCrear}
             className="bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
           >
@@ -252,6 +353,42 @@ export default function GestionInstituciones() {
           </button>
         </div>
       </div>
+
+      {/* Resumen de Importación */}
+      {resumenImport && (
+        <div
+          className={`p-4 rounded-2xl border text-xs flex items-start justify-between gap-3 shadow-xs ${
+            resumenImport.tipo === 'exito'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              : 'bg-rose-50 text-rose-900 border-rose-200'
+          }`}
+        >
+          <div className="space-y-1">
+            <div className="font-bold flex items-center gap-2">
+              <span>{resumenImport.tipo === 'exito' ? '✅' : '⚠️'}</span>
+              <span>{resumenImport.mensaje}</span>
+            </div>
+            {resumenImport.resumen && (
+              <div className="text-[11px] text-slate-600 flex flex-wrap gap-4 pt-1">
+                <span>Total procesados: <strong>{resumenImport.resumen.total}</strong></span>
+                <span className="text-emerald-700 font-semibold">Nuevos creados: <strong>{resumenImport.resumen.creados}</strong></span>
+                <span className="text-blue-700 font-semibold">Actualizados: <strong>{resumenImport.resumen.actualizados}</strong></span>
+                {resumenImport.resumen.ignorados > 0 && (
+                  <span className="text-amber-700 font-semibold">Omitidos: <strong>{resumenImport.resumen.ignorados}</strong></span>
+                )}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setResumenImport(null)}
+            className="text-slate-400 hover:text-slate-600 font-bold text-sm leading-none p-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
 
       {/* Tabla de Instituciones con Selección Múltiple */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">

@@ -35,6 +35,9 @@ const PadronPersonal = sequelize.define('PadronPersonal', {
 }, {
   tableName: 'padron_personal_educativo',
   timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       unique: true,

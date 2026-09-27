@@ -855,7 +855,7 @@ export default function RegistrosConsejosComunales() {
                 </div>
 
                 <p className="text-[11px] text-slate-400 text-right">
-                  Registrado el {new Date(selectedItem.createdAt).toLocaleString('es-VE')}
+                  Registrado el {new Date(selectedItem.createdAt || selectedItem.created_at || Date.now()).toLocaleString('es-VE')}
                 </p>
               </div>
 

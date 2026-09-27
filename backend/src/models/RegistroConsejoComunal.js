@@ -94,6 +94,9 @@ const RegistroConsejoComunal = sequelize.define('RegistroConsejoComunal', {
 }, {
   tableName: 'registros_consejos_comunales',
   timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       unique: true,

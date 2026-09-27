@@ -1,5 +1,6 @@
 const { PadronPersonal, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const ExcelJS = require('exceljs');
 
 const REGEX_CEDULA = /^\d{5,9}$/;
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.,'-]{3,150}$/;
@@ -293,3 +294,220 @@ exports.estadisticasPadron = async (req, res) => {
     return res.status(500).json({ error: 'Error al consultar estadísticas del padrón.' });
   }
 };
+
+/**
+ * GET /api/padron/export/excel
+ * Exportación de registros del padrón a Excel profesional (Admin)
+ */
+exports.exportarExcel = async (req, res) => {
+  try {
+    const { search = '', municipio = '', tipo_personal = '' } = req.query;
+    const where = {};
+
+    if (search && search.trim()) {
+      const s = `%${search.trim()}%`;
+      where[Op.or] = [
+        { cedula: { [Op.iLike]: s } },
+        { nombres_apellidos: { [Op.iLike]: s } }
+      ];
+    }
+
+    if (municipio && String(municipio).trim()) {
+      where.municipio = { [Op.iLike]: `%${String(municipio).trim()}%` };
+    }
+
+    if (tipo_personal && String(tipo_personal).trim()) {
+      where.tipo_personal = String(tipo_personal).trim();
+    }
+
+    const registros = await PadronPersonal.findAll({
+      where,
+      order: [['cedula', 'ASC']]
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sala Situacional CDCE ESTADAL GUÁRICO';
+    workbook.title = 'Padrón Personal Educativo - Sala Situacional CDCE ESTADAL GUÁRICO';
+
+    const worksheet = workbook.addWorksheet('Padrón Personal', {
+      views: [{ showGridLines: true }]
+    });
+
+    worksheet.columns = [
+      { header: 'Nacionalidad', key: 'nacionalidad', width: 14 },
+      { header: 'Cédula', key: 'cedula', width: 18 },
+      { header: 'Nombres y Apellidos', key: 'nombres_apellidos', width: 36 },
+      { header: 'Tipo Personal', key: 'tipo_personal', width: 25 },
+      { header: 'Municipio', key: 'municipio', width: 25 }
+    ];
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 28;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+      };
+    });
+
+    registros.forEach((reg) => {
+      const row = worksheet.addRow({
+        nacionalidad: reg.nacionalidad || 'V',
+        cedula: reg.cedula,
+        nombres_apellidos: reg.nombres_apellidos,
+        tipo_personal: reg.tipo_personal || 'Docente',
+        municipio: reg.municipio || 'N/A'
+      });
+      row.height = 20;
+      row.alignment = { vertical: 'middle' };
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="Padron_Personal_Educativo.xlsx"');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return res.send(buffer);
+  } catch (error) {
+    console.error('Error al exportar padrón a Excel:', error);
+    return res.status(500).json({ error: 'Error al exportar registros del padrón a Excel.' });
+  }
+};
+
+/**
+ * POST /api/padron/import/excel
+ * Importación masiva de funcionarios desde archivo Excel (Admin)
+ */
+exports.importarExcel = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ error: 'No se ha subido ningún archivo Excel (.xlsx o .xls).' });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      return res.status(400).json({ error: 'El archivo Excel no contiene ninguna hoja con datos.' });
+    }
+
+    // Detectar dinámicamente columnas por nombre de encabezado en la primera fila
+    let colNac = -1;
+    let colCed = -1;
+    let colNom = -1;
+    let colTipo = -1;
+    let colMun = -1;
+
+    const row1 = worksheet.getRow(1);
+    row1.eachCell((cell, colNumber) => {
+      const val = String(cell.value || '').toLowerCase().trim();
+      if (val.includes('nacion')) colNac = colNumber;
+      else if (val.includes('cedula') || val.includes('cédula') || val === 'ci') colCed = colNumber;
+      else if (val.includes('nombre') || val.includes('apellido') || val.includes('funcionario')) colNom = colNumber;
+      else if (val.includes('tipo') || val.includes('cargo') || val.includes('rol')) colTipo = colNumber;
+      else if (val.includes('municip')) colMun = colNumber;
+    });
+
+    const tieneCabecera = (colCed !== -1 || colNom !== -1);
+    const listaAProcesar = [];
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return; // Omitir fila 1 (encabezado)
+
+      let nac = 'V';
+      let rawCed = '';
+      let rawNom = '';
+      let rawTipo = 'Docente';
+      let rawMun = null;
+
+      if (tieneCabecera) {
+        if (colNac !== -1) nac = String(row.getCell(colNac).value || 'V').trim().toUpperCase();
+        if (colCed !== -1) rawCed = String(row.getCell(colCed).value || '').trim();
+        if (colNom !== -1) rawNom = String(row.getCell(colNom).value || '').trim();
+        if (colTipo !== -1) rawTipo = String(row.getCell(colTipo).value || 'Docente').trim();
+        if (colMun !== -1) rawMun = String(row.getCell(colMun).value || '').trim();
+      } else {
+        // Fallback posicional
+        const val1 = String(row.getCell(1).value || '').trim();
+        const val2 = String(row.getCell(2).value || '').trim();
+        const val3 = String(row.getCell(3).value || '').trim();
+        const val4 = String(row.getCell(4).value || '').trim();
+        const val5 = String(row.getCell(5).value || '').trim();
+
+        if (['V', 'E', 'V-', 'E-'].includes(val1.toUpperCase())) {
+          nac = val1.replace('-', '').toUpperCase();
+          rawCed = val2;
+          rawNom = val3;
+          rawTipo = val4 || 'Docente';
+          rawMun = val5 || null;
+        } else {
+          rawCed = val1;
+          rawNom = val2;
+          rawTipo = val3 || 'Docente';
+          rawMun = val4 || null;
+        }
+      }
+
+      // Normalizar cédula y prefijo de nacionalidad si está incluido
+      let cedStr = rawCed.toUpperCase();
+      if (cedStr.startsWith('V-') || cedStr.startsWith('V')) {
+        nac = 'V';
+        cedStr = cedStr.replace(/^V-?/, '');
+      } else if (cedStr.startsWith('E-') || cedStr.startsWith('E')) {
+        nac = 'E';
+        cedStr = cedStr.replace(/^E-?/, '');
+      }
+
+      const cleanCed = cedStr.replace(/\D/g, '');
+      const nombres = sanitizarTexto(rawNom);
+      const tipo = sanitizarTexto(rawTipo) || 'Docente';
+      const mun = sanitizarTexto(rawMun) || null;
+
+      if (!['V', 'E'].includes(nac)) nac = 'V';
+
+      if (REGEX_CEDULA.test(cleanCed) && REGEX_NOMBRE.test(nombres)) {
+        listaAProcesar.push({
+          nacionalidad: nac,
+          cedula: cleanCed,
+          nombres_apellidos: nombres,
+          tipo_personal: tipo,
+          municipio: mun
+        });
+      }
+    });
+
+    if (listaAProcesar.length === 0) {
+      return res.status(400).json({
+        error: 'No se encontraron registros válidos para procesar. Verifique que las columnas contengan Cédula y Nombres válidos.'
+      });
+    }
+
+    // Filtrar duplicados dentro de la misma lista
+    const mapaUnicos = new Map();
+    for (const item of listaAProcesar) {
+      const key = `${item.nacionalidad}-${item.cedula}`;
+      mapaUnicos.set(key, item);
+    }
+    const unicos = Array.from(mapaUnicos.values());
+
+    await PadronPersonal.bulkCreate(unicos, {
+      updateOnDuplicate: ['nombres_apellidos', 'tipo_personal', 'municipio']
+    });
+
+    return res.json({
+      success: true,
+      total: unicos.length,
+      message: `¡Importación exitosa! Se procesaron y actualizaron ${unicos.length} funcionarios en el padrón institucional.`
+    });
+  } catch (error) {
+    console.error('Error en importación de Excel en padrón:', error);
+    return res.status(500).json({ error: 'Error al procesar el archivo Excel.' });
+  }
+};
+

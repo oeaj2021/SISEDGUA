@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getPadron,
   createPadronManual,
   uploadPadronMasivo,
   deletePadron,
-  getPadronStats
+  getPadronStats,
+  exportPadronExcel,
+  importPadronExcel
 } from '../services/api';
 import { MUNICIPIOS_GUARICO } from '../utils/guaricoData';
 
@@ -48,6 +50,108 @@ export default function GestionPadron() {
   const [rawTextMasivo, setRawTextMasivo] = useState('');
   const [submittingMasivo, setSubmittingMasivo] = useState(false);
   const [msgMasivo, setMsgMasivo] = useState(null);
+
+  // Integración Excel
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await exportPadronExcel({
+        search: search || undefined,
+        municipio: municipio || undefined,
+        tipo_personal: tipoPersonal || undefined
+      });
+
+      let blobData = res.data;
+      if (blobData instanceof Blob && blobData.type && blobData.type.includes('application/json')) {
+        const text = await blobData.text();
+        const json = JSON.parse(text);
+        throw new Error(json.error || 'Error al generar el archivo Excel');
+      }
+
+      const blob = new Blob([blobData], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Padron_Personal_Educativo_${Date.now()}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }, 200);
+    } catch (err) {
+      console.error('Error al exportar padrón a Excel:', err);
+      alert('Error al descargar el archivo Excel: ' + (err.response?.data?.error || err.message || 'Error de conexión'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reiniciar input para permitir seleccionar el mismo archivo nuevamente si se desea
+    e.target.value = '';
+
+    const formData = new FormData();
+    formData.append('archivo', file);
+
+    setImporting(true);
+    setImportMessage(null);
+    try {
+      const res = await importPadronExcel(formData);
+      setImportMessage({
+        type: 'success',
+        text: res.data?.message || '¡Archivo Excel importado con éxito!'
+      });
+      fetchPadron();
+      fetchStats();
+    } catch (err) {
+      console.error('Error al importar Excel en padrón:', err);
+      let errMsg = 'Error al procesar el archivo Excel.';
+      if (err.response?.data?.error) {
+        errMsg = err.response.data.error;
+      } else if (err.message) {
+        errMsg = err.message;
+      }
+      setImportMessage({
+        type: 'error',
+        text: errMsg
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const csvContent = '\uFEFF' + [
+      'Nacionalidad,Cédula,Nombres y Apellidos,Tipo Personal,Municipio',
+      'V,12345678,Juan Pérez,Docente,ROSCIO',
+      'V,87654321,María García,Cocinera de la Patria,MIRANDA',
+      'E,84123456,Carlos Rodríguez,Administrativo,INFANTE'
+    ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Plantilla_Padron_Personal.csv');
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    }, 200);
+  };
 
   const fetchPadron = useCallback(async () => {
     setLoading(true);
@@ -165,39 +269,107 @@ export default function GestionPadron() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Navegación Modos */}
+          <div className="inline-flex rounded-xl bg-slate-100 p-1">
+            <button
+              onClick={() => setModo('lista')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                modo === 'lista'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Listado ({totalCount})
+            </button>
+            <button
+              onClick={() => setModo('individual')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                modo === 'individual'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ➕ Cargar Uno
+            </button>
+            <button
+              onClick={() => setModo('masivo')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                modo === 'masivo'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ⚡ Pegar Texto
+            </button>
+          </div>
+
+          {/* Input oculto para importación de Excel */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportExcel}
+            accept=".xlsx, .xls, .csv"
+            className="hidden"
+          />
+
+          {/* Botones de Integración Excel */}
           <button
-            onClick={() => setModo('lista')}
-            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
-              modo === 'lista'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs disabled:opacity-50"
+            title="Importar personal masivamente desde archivo Excel (.xlsx)"
           >
-            Listado ({totalCount})
+            <span>{importing ? '⏳' : '📤'}</span>
+            <span>{importing ? 'Importando...' : 'Importar desde Excel'}</span>
           </button>
+
           <button
-            onClick={() => setModo('individual')}
-            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
-              modo === 'individual'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+            type="button"
+            onClick={handleExportExcel}
+            disabled={exporting}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs disabled:opacity-50"
+            title="Exportar registros del padrón a un archivo Excel (.xlsx)"
           >
-            ➕ Cargar Uno
+            <span>{exporting ? '⏳' : '📥'}</span>
+            <span>{exporting ? 'Generando...' : 'Exportar Padrón (Excel)'}</span>
           </button>
+
           <button
-            onClick={() => setModo('masivo')}
-            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
-              modo === 'masivo'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+            type="button"
+            onClick={handleDownloadTemplate}
+            className="inline-flex items-center gap-1.5 px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl transition cursor-pointer"
+            title="Descargar plantilla de ejemplo para importación de datos"
           >
-            ⚡ Carga Masiva
+            <span>📄</span>
+            <span>Plantilla Excel</span>
           </button>
         </div>
       </div>
+
+      {/* Mensaje de feedback de importación Excel */}
+      {importMessage && (
+        <div
+          className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between shadow-xs ${
+            importMessage.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span>{importMessage.type === 'success' ? '✅' : '❌'}</span>
+            <span>{importMessage.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setImportMessage(null)}
+            className="text-slate-400 hover:text-slate-600 text-sm font-bold ml-3 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* KPI Stats del Padrón */}
       {stats && (
@@ -389,6 +561,34 @@ export default function GestionPadron() {
             automáticamente.
           </p>
 
+          <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl mb-4 text-xs text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="font-bold flex items-center gap-1.5">
+                <span>💡</span> Importación directa desde archivo Excel (.xlsx)
+              </span>
+              <p className="text-[11px] text-blue-700 mt-0.5">
+                Puede subir directamente un archivo Excel o descargar la plantilla de columnas recomendadas.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="px-3 py-1.5 bg-white border border-blue-300 text-blue-700 font-bold rounded-lg text-xs hover:bg-blue-50 transition cursor-pointer shadow-2xs"
+              >
+                📄 Descargar Plantilla
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                {importing ? '⏳ Importando...' : '📤 Subir Archivo Excel'}
+              </button>
+            </div>
+          </div>
+
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4 text-xs text-amber-900">
             <span className="font-bold">Formato por línea:</span> CÉDULA, NOMBRES Y APELLIDOS, TIPO
             PERSONAL, MUNICIPIO (separados por comas o tabuladores).
@@ -532,22 +732,34 @@ export default function GestionPadron() {
           )}
 
           {/* Subcabecera Tabla Padrón */}
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <span className="text-xs font-semibold text-slate-500">
               Registros en lista: <strong className="text-slate-900">{padron.length}</strong> de <strong className="text-slate-900">{totalCount}</strong>
             </span>
-            <button
-              type="button"
-              onClick={() => {
-                fetchPadron();
-                fetchStats();
-              }}
-              disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50"
-            >
-              <span className={loading ? 'animate-spin' : ''}>🔄</span>
-              <span>Actualizar Padrón</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                disabled={exporting || totalCount === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50"
+                title="Descargar padrón en formato Excel (.xlsx)"
+              >
+                <span>{exporting ? '⏳' : '📥'}</span>
+                <span>{exporting ? 'Exportando...' : 'Descargar Excel'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchPadron();
+                  fetchStats();
+                }}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                <span className={loading ? 'animate-spin' : ''}>🔄</span>
+                <span>Actualizar Padrón</span>
+              </button>
+            </div>
           </div>
 
           {/* Tabla Padrón */}

@@ -24,6 +24,13 @@ export const updateInstitucion = (id, data) => api.put(`/instituciones/${id}`, d
 export const deleteInstitucion = (id) => api.delete(`/instituciones/${id}`);
 export const deleteInstitucionesBatch = (ids) => api.post('/instituciones/delete-batch', { ids });
 export const getCapacidadesMunicipios = () => api.get('/instituciones/capacidad');
+export const exportInstitucionesExcel = (params) =>
+  api.get('/instituciones/export/excel', { params, responseType: 'blob' });
+export const importInstitucionesExcel = (formData) =>
+  api.post('/instituciones/import/excel', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
 
 // Gestión de Matrícula Máxima por Municipio y Turno (Admin)
 export const getCapacidadesMunicipio = (params) => api.get('/capacidades', { params });
@@ -53,5 +60,11 @@ export const createPadronManual = (data) => api.post('/padron/manual', data);
 export const uploadPadronMasivo = (data) => api.post('/padron/masivo', data);
 export const deletePadron = (id) => api.delete(`/padron/${id}`);
 export const getPadronStats = () => api.get('/padron/stats');
+export const exportPadronExcel = (params) =>
+  api.get('/padron/export/excel', { params, responseType: 'blob' });
+export const importPadronExcel = (formData) =>
+  api.post('/padron/import/excel', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 
 export default api;

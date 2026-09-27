@@ -56,6 +56,10 @@ const Institucion = sequelize.define('Institucion', {
   }
 }, {
   tableName: 'instituciones',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     { fields: ['municipio'] },
     { fields: ['turno'] }

@@ -217,7 +217,7 @@ exports.crearRegistro = async (req, res) => {
         edad: nuevoRegistro.edad,
         municipio: nuevoRegistro.municipio,
         parroquia: nuevoRegistro.parroquia,
-        createdAt: nuevoRegistro.createdAt
+        createdAt: nuevoRegistro.created_at || nuevoRegistro.createdAt
       }
     });
   } catch (error) {
@@ -332,7 +332,7 @@ exports.listarRegistros = async (req, res) => {
       where,
       limit: parsedLimit,
       offset,
-      order: [['createdAt', 'DESC']]
+      order: [['id', 'DESC']]
     });
 
     return res.json({
@@ -383,7 +383,7 @@ exports.exportarExcel = async (req, res) => {
 
     const registros = await RegistroConsejoComunal.findAll({
       where,
-      order: [['createdAt', 'DESC']]
+      order: [['id', 'DESC']]
     });
 
     const workbook = new ExcelJS.Workbook();
@@ -424,6 +424,7 @@ exports.exportarExcel = async (req, res) => {
     });
 
     registros.forEach((reg, i) => {
+      const fechaRegistro = reg.created_at || reg.createdAt;
       const row = worksheet.addRow({
         index: i + 1,
         cedula: `${reg.nacionalidad}-${reg.cedula}`,
@@ -443,7 +444,7 @@ exports.exportarExcel = async (req, res) => {
         forma_parte_comite: reg.forma_parte_comite ? 'SÍ' : 'NO',
         comite: reg.comite || 'N/A',
         comite_detalle: reg.comite_detalle || 'N/A',
-        fecha: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString('es-VE') : 'N/A'
+        fecha: fechaRegistro ? new Date(fechaRegistro).toLocaleDateString('es-VE') : 'N/A'
       });
       row.alignment = { vertical: 'middle' };
     });
