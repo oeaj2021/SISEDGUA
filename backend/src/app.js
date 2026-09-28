@@ -83,7 +83,7 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   passOnStoreError: true, // Si Redis se reinicia, la petición pasa sin error 500
-  validate: { trustProxy: false },
+  validate: false,
   keyGenerator: clientIpKey,
   store: createLimiterStore('gen'),
   message: { error: 'Límite de solicitudes alcanzado. Por favor, intente más tarde.' }
@@ -95,7 +95,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   passOnStoreError: true,
-  validate: { trustProxy: false },
+  validate: false,
   keyGenerator: clientIpKey,
   store: createLimiterStore('auth'),
   message: { error: 'Demasiados intentos de acceso fallidos. Por seguridad, intente de nuevo en 15 minutos.' }
@@ -107,7 +107,7 @@ const submitLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   passOnStoreError: true,
-  validate: { trustProxy: false },
+  validate: false,
   keyGenerator: clientIpKey,
   store: createLimiterStore('sub'),
   message: { error: 'Ha enviado un número elevado de registros. Espere unos minutos antes de continuar.' }
@@ -119,7 +119,7 @@ const consultaLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   passOnStoreError: true,
-  validate: { trustProxy: false },
+  validate: false,
   keyGenerator: clientIpKey,
   store: createLimiterStore('con'),
   message: { error: 'Demasiadas consultas de verificación. Por favor espere un momento.' }
