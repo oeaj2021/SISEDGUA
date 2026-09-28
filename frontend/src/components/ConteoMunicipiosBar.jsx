@@ -27,7 +27,13 @@ export default function ConteoMunicipiosBar() {
 
   useEffect(() => {
     cargarConteo();
-    const timer = setInterval(cargarConteo, 30000);
+    // Actualización cada 1 hora y media (90 minutos = 5.400.000 ms)
+    const INTERVALO_HORA_Y_MEDIA_MS = 90 * 60 * 1000;
+    const timer = setInterval(() => {
+      if (!document.hidden) {
+        cargarConteo();
+      }
+    }, INTERVALO_HORA_Y_MEDIA_MS);
     return () => clearInterval(timer);
   }, []);
 

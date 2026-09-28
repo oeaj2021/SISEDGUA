@@ -302,6 +302,20 @@ export default function Navbar() {
                 </NavLink>
 
                 <NavLink
+                  to="/admin/instituciones"
+                  className={({ isActive }) =>
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      isActive
+                        ? 'bg-white text-blue-900 shadow-sm'
+                        : 'bg-blue-800 text-white hover:bg-blue-700'
+                    }`
+                  }
+                >
+                  <span>🏫</span>
+                  <span>Instituciones</span>
+                </NavLink>
+
+                <NavLink
                   to="/consejos-comunales/registros"
                   className={({ isActive }) =>
                     `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
@@ -424,6 +438,14 @@ export default function Navbar() {
                   >
                     <span>📊</span>
                     <span>Panel Admin</span>
+                  </NavLink>
+                  <NavLink
+                    to="/admin/instituciones"
+                    onClick={() => setMenuAbierto(false)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-blue-800 text-white hover:bg-blue-700"
+                  >
+                    <span>🏫</span>
+                    <span>Instituciones</span>
                   </NavLink>
                   <NavLink
                     to="/consejos-comunales/registros"

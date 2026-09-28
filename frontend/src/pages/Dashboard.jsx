@@ -7,7 +7,6 @@ import {
 import { useAuth } from '../context/AuthContext';
 import StatsCard from '../components/StatsCard';
 import ExportButton from '../components/ExportButton';
-import GestionInstituciones from '../components/GestionInstituciones';
 import GestionCapacidadMunicipios from '../components/GestionCapacidadMunicipios';
 import { getStats, getPorMunicipio, getTendencia, getReportes } from '../services/api';
 
@@ -20,7 +19,7 @@ const MUNICIPIOS = [
 export default function Dashboard() {
   const { admin, logout } = useAuth();
 
-  // Pestaña activa: 'estadisticas' | 'municipios' | 'instituciones'
+  // Pestaña activa: 'estadisticas' | 'municipios'
   const [pestanaActiva, setPestanaActiva] = useState('estadisticas');
 
   const fechaHoy = new Date().toISOString().split('T')[0];
@@ -134,16 +133,12 @@ export default function Dashboard() {
             <span>🏛️</span> Matrícula y Personal Máximo por Municipio
           </button>
 
-          <button
-            onClick={() => setPestanaActiva('instituciones')}
-            className={`py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
-              pestanaActiva === 'instituciones'
-                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
-            }`}
+          <Link
+            to="/admin/instituciones"
+            className="py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 transition-colors"
           >
-            <span>🏫</span> Catálogo Escolar de Instituciones
-          </button>
+            <span>🏫</span> Administrar Instituciones ↗
+          </Link>
 
           <div className="h-6 w-px bg-slate-200 self-center mx-1"></div>
 
@@ -167,9 +162,6 @@ export default function Dashboard() {
         {pestanaActiva === 'municipios' ? (
           /* Pestaña: Matrícula y Personal Máximo Oficial por Municipio y Turno */
           <GestionCapacidadMunicipios />
-        ) : pestanaActiva === 'instituciones' ? (
-          /* Pestaña: Catálogo de Instituciones */
-          <GestionInstituciones />
         ) : (
           /* Pestaña: Métricas, Gráficas, Filtros y Tabla */
           <>
@@ -265,9 +257,144 @@ export default function Dashboard() {
                   icon="📊"
                   label="Tasa Global Asistencia"
                   value={`${stats.pct_asistencia || 0}%`}
-                  subtext="Rendimiento"
+                  subtext="Rendimiento Estudiantil"
                   color="amber"
                 />
+              </div>
+            )}
+
+            {/* SECCIÓN DE CONTROL Y ASISTENCIA DE PERSONAL */}
+            {stats && (
+              <div className="bg-white rounded-3xl shadow-sm border border-blue-100 p-6 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-blue-50 text-blue-700 text-sm">👥</span>
+                      Asistencia General de Personal por Cargo
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Monitoreo en tiempo real de Docentes, Administrativos, Obreros y Cocineras(os) de la Patria
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                      Total Personal Convocado: <span className="text-blue-700 font-extrabold">{stats.total_personal || 0}</span>
+                    </span>
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                      Asistencia Global Personal: <span className="font-extrabold">{stats.pct_personal_asistencia || '0.00'}%</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tarjetas KPI de Personal por Rol */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Docentes */}
+                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 flex flex-col justify-between hover:border-blue-300 transition">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xl">👨‍🏫</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                        {stats.pct_docentes || '0.00'}%
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">Personal Docente</span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-xl font-black text-blue-900">{stats.docentes_asistente || 0}</span>
+                        <span className="text-[11px] font-semibold text-slate-400">asistieron</span>
+                      </div>
+                      <span className="text-[11px] text-rose-600 font-semibold block mt-0.5">
+                        {stats.docentes_inasistente || 0} inasistentes
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Administrativo */}
+                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 flex flex-col justify-between hover:border-indigo-300 transition">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xl">📋</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                        {stats.pct_admin || '0.00'}%
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">Administrativo</span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-xl font-black text-indigo-900">{stats.admin_asistente || 0}</span>
+                        <span className="text-[11px] font-semibold text-slate-400">asistieron</span>
+                      </div>
+                      <span className="text-[11px] text-rose-600 font-semibold block mt-0.5">
+                        {stats.admin_inasistente || 0} inasistentes
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Obrero */}
+                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-300 transition">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xl">🧹</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                        {stats.pct_obrero || '0.00'}%
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">Obrero / Mantenimiento</span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-xl font-black text-amber-950">{stats.obrero_asistente || 0}</span>
+                        <span className="text-[11px] font-semibold text-slate-400">asistieron</span>
+                      </div>
+                      <span className="text-[11px] text-rose-600 font-semibold block mt-0.5">
+                        {stats.obrero_inasistente || 0} inasistentes
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cocineras */}
+                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-300 transition">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xl">🍲</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        {stats.pct_cocina || '0.00'}%
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">Cocineras(os) de la Patria</span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-xl font-black text-emerald-950">{stats.cocina_asistente || 0}</span>
+                        <span className="text-[11px] font-semibold text-slate-400">asistieron</span>
+                      </div>
+                      <span className="text-[11px] text-rose-600 font-semibold block mt-0.5">
+                        {stats.cocina_inasistente || 0} inasistentes
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gráfico Comparativo de Personal */}
+                <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50/40">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span>📊</span> Relación Asistentes vs Inasistentes por Rol
+                  </h4>
+                  <div className="h-60 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { rol: 'Docentes', Asistentes: stats.docentes_asistente || 0, Inasistentes: stats.docentes_inasistente || 0 },
+                          { rol: 'Administrativos', Asistentes: stats.admin_asistente || 0, Inasistentes: stats.admin_inasistente || 0 },
+                          { rol: 'Obreros', Asistentes: stats.obrero_asistente || 0, Inasistentes: stats.obrero_inasistente || 0 },
+                          { rol: 'Cocineras(os)', Asistentes: stats.cocina_asistente || 0, Inasistentes: stats.cocina_inasistente || 0 }
+                        ]}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis dataKey="rol" tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
+                        <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #BFDBFE', fontSize: '12px' }} />
+                        <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '6px' }} />
+                        <Bar dataKey="Asistentes" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Inasistentes" fill="#F43F5E" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -329,58 +456,109 @@ export default function Dashboard() {
                 <table className="w-full text-xs text-left">
                   <thead className="bg-slate-100 text-slate-700 border-b border-slate-200 uppercase text-[10px] tracking-wider font-semibold">
                     <tr>
-                      <th className="px-4 py-3.5">Turno</th>
-                      <th className="px-4 py-3.5">Fecha</th>
-                      <th className="px-4 py-3.5">Municipio</th>
-                      <th className="px-4 py-3.5">Institución</th>
-                      <th className="px-4 py-3.5">Director(a)</th>
-                      <th className="px-4 py-3.5 text-center">Est. Asist.</th>
-                      <th className="px-4 py-3.5 text-center">Est. Inasist.</th>
-                      <th className="px-4 py-3.5 text-center">Hora Registro</th>
-                      <th className="px-4 py-3.5">Observaciones</th>
+                      <th className="px-3 py-3.5">Turno</th>
+                      <th className="px-3 py-3.5">Fecha</th>
+                      <th className="px-3 py-3.5">Municipio</th>
+                      <th className="px-3 py-3.5">Institución</th>
+                      <th className="px-3 py-3.5">Director(a)</th>
+                      <th className="px-3 py-3.5 text-center bg-blue-50/50">Estudiantes (A/I)</th>
+                      <th className="px-3 py-3.5 text-center">Docentes (A/I)</th>
+                      <th className="px-3 py-3.5 text-center">Admin (A/I)</th>
+                      <th className="px-3 py-3.5 text-center">Obrero (A/I)</th>
+                      <th className="px-3 py-3.5 text-center">Cocina (A/I)</th>
+                      <th className="px-3 py-3.5 text-center bg-slate-200/50">Total Personal</th>
+                      <th className="px-3 py-3.5 text-center">Hora</th>
+                      <th className="px-3 py-3.5">Observaciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {reportesData.length > 0 ? (
-                      reportesData.map((rep) => (
-                        <tr key={rep.id} className="hover:bg-slate-50/80 transition">
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                              rep.turno === 'MAÑANA'
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'bg-indigo-100 text-indigo-900 border border-indigo-300'
-                            }`}>
-                              {rep.turno}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-700">{rep.fecha}</td>
-                          <td className="px-4 py-3 text-slate-600">
-                            {Array.isArray(rep.municipio) ? rep.municipio.join(', ') : rep.municipio}
-                          </td>
-                          <td className="px-4 py-3 font-semibold text-slate-900 max-w-xs truncate" title={rep.nombre_institucion}>
-                            {rep.nombre_institucion}
-                            {rep.es_institucion_manual && (
-                              <span className="ml-1.5 text-amber-600 text-[10px] font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                Manual
+                      reportesData.map((rep) => {
+                        const pAsist = (rep.docentes_asistente || 0) + (rep.admin_asistente || 0) + (rep.obrero_asistente || 0) + (rep.cocina_asistente || 0);
+                        const pInasist = (rep.docentes_inasistente || 0) + (rep.admin_inasistente || 0) + (rep.obrero_inasistente || 0) + (rep.cocina_inasistente || 0);
+                        const pTotal = pAsist + pInasist;
+
+                        return (
+                          <tr key={rep.id} className="hover:bg-slate-50/80 transition">
+                            <td className="px-3 py-3 whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                rep.turno === 'MAÑANA'
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  : 'bg-indigo-100 text-indigo-900 border border-indigo-300'
+                              }`}>
+                                {rep.turno}
                               </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-slate-700 whitespace-nowrap">{rep.nombre_director}</td>
-                          <td className="px-4 py-3 text-center font-bold text-blue-900">{rep.matricula_asistente}</td>
-                          <td className="px-4 py-3 text-center font-bold text-rose-600">{rep.matricula_inasistente}</td>
-                          <td className="px-4 py-3 text-center font-mono text-slate-500 whitespace-nowrap">
-                            {rep.created_at
-                              ? new Date(rep.created_at).toLocaleTimeString('es-VE', { hour12: false, timeZone: 'America/Caracas' })
-                              : '--:--'}
-                          </td>
-                          <td className="px-4 py-3 max-w-xs truncate text-slate-600" title={rep.incidencias}>
-                            {rep.incidencias}
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td className="px-3 py-3 whitespace-nowrap font-medium text-slate-700">{rep.fecha}</td>
+                            <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
+                              {Array.isArray(rep.municipio) ? rep.municipio.join(', ') : rep.municipio}
+                            </td>
+                            <td className="px-3 py-3 font-semibold text-slate-900 max-w-xs truncate" title={rep.nombre_institucion}>
+                              {rep.nombre_institucion}
+                              {rep.es_institucion_manual && (
+                                <span className="ml-1.5 text-amber-600 text-[10px] font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  Manual
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-3 text-slate-700 whitespace-nowrap">{rep.nombre_director}</td>
+                            
+                            {/* Estudiantes */}
+                            <td className="px-3 py-3 text-center whitespace-nowrap bg-blue-50/40">
+                              <span className="font-bold text-blue-900">{rep.matricula_asistente || 0}</span>
+                              <span className="text-slate-400 mx-1">/</span>
+                              <span className="font-bold text-rose-600">{rep.matricula_inasistente || 0}</span>
+                            </td>
+
+                            {/* Docentes */}
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                              <span className="font-semibold text-blue-900">{rep.docentes_asistente || 0}</span>
+                              <span className="text-slate-400 mx-1">/</span>
+                              <span className="font-semibold text-rose-600">{rep.docentes_inasistente || 0}</span>
+                            </td>
+
+                            {/* Administrativo */}
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                              <span className="font-semibold text-indigo-900">{rep.admin_asistente || 0}</span>
+                              <span className="text-slate-400 mx-1">/</span>
+                              <span className="font-semibold text-rose-600">{rep.admin_inasistente || 0}</span>
+                            </td>
+
+                            {/* Obrero */}
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                              <span className="font-semibold text-amber-950">{rep.obrero_asistente || 0}</span>
+                              <span className="text-slate-400 mx-1">/</span>
+                              <span className="font-semibold text-rose-600">{rep.obrero_inasistente || 0}</span>
+                            </td>
+
+                            {/* Cocina */}
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                              <span className="font-semibold text-emerald-950">{rep.cocina_asistente || 0}</span>
+                              <span className="text-slate-400 mx-1">/</span>
+                              <span className="font-semibold text-rose-600">{rep.cocina_inasistente || 0}</span>
+                            </td>
+
+                            {/* Total Personal */}
+                            <td className="px-3 py-3 text-center whitespace-nowrap bg-slate-100/60">
+                              <span className="font-extrabold text-blue-800">{pAsist}</span>
+                              <span className="text-slate-400 mx-0.5">/</span>
+                              <span className="font-semibold text-slate-600">{pTotal}</span>
+                            </td>
+
+                            <td className="px-3 py-3 text-center font-mono text-slate-500 whitespace-nowrap">
+                              {rep.created_at
+                                ? new Date(rep.created_at).toLocaleTimeString('es-VE', { hour12: false, timeZone: 'America/Caracas' })
+                                : '--:--'}
+                            </td>
+                            <td className="px-3 py-3 max-w-xs truncate text-slate-600" title={rep.incidencias}>
+                              {rep.incidencias}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
-                        <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
+                        <td colSpan={13} className="px-4 py-8 text-center text-slate-400">
                           No se encontraron reportes con los filtros seleccionados.
                         </td>
                       </tr>

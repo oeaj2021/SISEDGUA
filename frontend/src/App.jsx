@@ -6,6 +6,7 @@ import FormManana from './pages/FormManana';
 import FormTarde from './pages/FormTarde';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import AdminInstituciones from './pages/AdminInstituciones';
 import RegistroConsejoComunal from './pages/RegistroConsejoComunal';
 import RegistrosConsejosComunales from './pages/RegistrosConsejosComunales';
 import { getRutaSegunHorario, getTurnoActivo } from './utils/horario';
@@ -112,6 +113,14 @@ function AppRoutes() {
         element={
           <RutaProtegida>
             <Dashboard />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/admin/instituciones"
+        element={
+          <RutaProtegida>
+            <AdminInstituciones />
           </RutaProtegida>
         }
       />
