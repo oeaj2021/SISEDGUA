@@ -5,12 +5,18 @@ const { redisClient } = require('../config/redis');
 const ctrl = require('../controllers/reporteController');
 const horario = require('../middlewares/horarioMiddleware');
 
+const clientIpKey = (req) => {
+  return req.headers['cf-connecting-ip'] || req.headers['x-real-ip'] || req.ip;
+};
+
 const submitLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30, // 30 envíos cada 15 min por IP real
+  max: 50, // 50 envíos cada 15 min por IP real
   standardHeaders: true,
   legacyHeaders: false,
   passOnStoreError: true,
+  validate: false,
+  keyGenerator: clientIpKey,
   store: new RedisStore({
     sendCommand: (...args) => redisClient.call(...args),
     prefix: 'rl:rep_sub:'
