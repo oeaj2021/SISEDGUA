@@ -36,8 +36,9 @@ api.interceptors.response.use(
 // Llamadas API - Reportes & Público
 export const submitReporte = (data) => api.post('/reportes', data);
 export const checkDuplicado = (params) => api.get('/reportes/check-duplicado', { params });
-export const getConteoHoy = () => api.get('/reportes/conteo-hoy');
+export const getConteoHoy = (params) => api.get('/reportes/conteo-hoy', { params });
 export const getInstituciones = (params) => api.get('/instituciones', { params });
+
 
 // CRUD Instituciones (Admin)
 export const createInstitucion = (data) => api.post('/instituciones', data);

@@ -126,6 +126,7 @@ exports.checkDuplicado = async (req, res) => {
 
 exports.getConteoHoy = async (req, res) => {
   try {
+    const { turno } = req.query;
     const now = new Date();
     const venezuelaOffset = -4 * 60; // minutos (UTC-4)
     const localMs = now.getTime() + (now.getTimezoneOffset() + venezuelaOffset) * 60000;
@@ -134,55 +135,71 @@ exports.getConteoHoy = async (req, res) => {
 
     // ⚡ Cache-Aside: comprobar si ya está calculado en Redis
     const cacheKey = `cache:reportes:conteo:${fechaHoy}`;
-    const cached = await getJson(cacheKey);
-    if (cached) {
-      return res.json(cached);
-    }
+    let cached = await getJson(cacheKey);
 
-    const reportesHoy = await Reporte.findAll({
-      where: { fecha: fechaHoy },
-      attributes: ['municipio', 'turno']
-    });
+    if (!cached) {
+      const reportesHoy = await Reporte.findAll({
+        where: { fecha: fechaHoy },
+        attributes: ['municipio', 'turno']
+      });
 
-    const conteo = {};
-    MUNICIPIOS_VALIDOS.forEach(m => {
-      conteo[m] = {
-        municipio: m,
-        total: 0,
-        manana: 0,
-        tarde: 0
-      };
-    });
+      const conteo = {};
+      MUNICIPIOS_VALIDOS.forEach(m => {
+        conteo[m] = {
+          municipio: m,
+          total: 0,
+          manana: 0,
+          tarde: 0
+        };
+      });
 
-    let totalGeneral = 0;
+      let totalGeneral = 0;
+      let totalManana = 0;
+      let totalTarde = 0;
 
-    reportesHoy.forEach(r => {
-      totalGeneral += 1;
-      if (Array.isArray(r.municipio)) {
-        r.municipio.forEach(m => {
+      reportesHoy.forEach(r => {
+        totalGeneral += 1;
+        const esManana = r.turno === 'MAÑANA';
+        const esTarde = r.turno === 'TARDE';
+        if (esManana) totalManana += 1;
+        if (esTarde) totalTarde += 1;
+
+        const mList = Array.isArray(r.municipio)
+          ? r.municipio
+          : (typeof r.municipio === 'string' ? [r.municipio] : []);
+
+        mList.forEach(m => {
           const mun = (m || '').toUpperCase().trim();
           if (conteo[mun]) {
             conteo[mun].total += 1;
-            if (r.turno === 'MAÑANA') conteo[mun].manana += 1;
-            if (r.turno === 'TARDE') conteo[mun].tarde += 1;
+            if (esManana) conteo[mun].manana += 1;
+            if (esTarde) conteo[mun].tarde += 1;
           }
         });
-      }
+      });
+
+      cached = {
+        fecha: fechaHoy,
+        total_general: totalGeneral,
+        total_manana: totalManana,
+        total_tarde: totalTarde,
+        por_municipio: Object.values(conteo)
+      };
+
+      // Guardar en Redis con TTL de 120 segundos
+      await setJson(cacheKey, cached, 120);
+    }
+
+    const turnoParam = turno ? String(turno).toUpperCase().trim() : '';
+
+    return res.json({
+      ...cached,
+      turno_solicitado: turnoParam || 'TODOS'
     });
-
-    const resultado = {
-      fecha: fechaHoy,
-      total_general: totalGeneral,
-      por_municipio: Object.values(conteo)
-    };
-
-    // Guardar en Redis con TTL de 300 segundos (5 minutos)
-    await setJson(cacheKey, resultado, 300);
-
-    return res.json(resultado);
   } catch (error) {
     console.error('Error al obtener conteo de hoy:', error);
     return res.status(500).json({ error: 'Error al consultar conteo de reportes' });
   }
 };
+
 
