@@ -44,3 +44,24 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Scrollbar horizontal estilizado para la barra de municipios */
+.municipios-scrollbar::-webkit-scrollbar {
+  height: 5px;
+}
+.municipios-scrollbar::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 9999px;
+}
+.municipios-scrollbar::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 9999px;
+}
+.municipios-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa;
+}
+.municipios-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #0f172a;
+}
+
