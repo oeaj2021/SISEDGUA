@@ -7,16 +7,15 @@ const redisConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT, 10) || 6379,
   password: process.env.REDIS_PASSWORD || undefined,
-  lazyConnect: true,
-  enableOfflineQueue: false, // Evita encolar peticiones en memoria si Redis cae
+  enableOfflineQueue: true, // Permite que rate-limit-redis encole SCRIPT LOAD durante el arranque sin fallar
   maxRetriesPerRequest: 1,
-  connectTimeout: 4000,
+  connectTimeout: 5000,
   retryStrategy(times) {
-    if (times > 10) {
-      console.warn('⚠️ [Redis] Superado límite de reintentos. Operando en modo degradado (Fallback directo a PostgreSQL).');
+    if (times > 8) {
+      console.warn('⚠️ [Redis] Límite de reintentos alcanzado. Operando en modo degradado (Fallback directo a PostgreSQL).');
       return null;
     }
-    return Math.min(times * 500, 3000);
+    return Math.min(times * 500, 2000);
   }
 };
 
@@ -40,13 +39,6 @@ redisClient.on('error', (err) => {
 redisClient.on('close', () => {
   isConnected = false;
 });
-
-// Inicialización de conexión diferida segura
-if (process.env.NODE_ENV !== 'test') {
-  redisClient.connect().catch((err) => {
-    console.warn('ℹ️ [Redis] Servidor Redis no disponible al arrancar. La aplicación continuará funcionando usando PostgreSQL:', err.message);
-  });
-}
 
 /**
  * Helper para verificar si Redis está activo
