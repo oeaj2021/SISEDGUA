@@ -139,22 +139,6 @@ export default function Dashboard() {
           >
             <span>🏫</span> Administrar Instituciones ↗
           </Link>
-
-          <div className="h-6 w-px bg-slate-200 self-center mx-1"></div>
-
-          <Link
-            to="/consejos-comunales/registros"
-            className="py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-transparent transition-colors"
-          >
-            <span>🏛️</span> Consejos Comunales
-          </Link>
-
-          <Link
-            to="/consejos-comunales/registros?tab=padron"
-            className="py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-transparent transition-colors"
-          >
-            <span>👥</span> Padrón Electoral
-          </Link>
         </div>
       </div>
 

@@ -315,34 +315,6 @@ export default function Navbar() {
                   <span>Instituciones</span>
                 </NavLink>
 
-                <NavLink
-                  to="/consejos-comunales/registros"
-                  className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                      isActive && !location.search.includes('tab=padron')
-                        ? 'bg-white text-blue-900 shadow-sm'
-                        : 'bg-blue-800 text-white hover:bg-blue-700'
-                    }`
-                  }
-                >
-                  <span>🏛️</span>
-                  <span>Comunales</span>
-                </NavLink>
-
-                <NavLink
-                  to="/consejos-comunales/registros?tab=padron"
-                  className={() =>
-                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                      location.search.includes('tab=padron')
-                        ? 'bg-white text-blue-900 shadow-sm'
-                        : 'bg-blue-800 text-white hover:bg-blue-700'
-                    }`
-                  }
-                >
-                  <span>👥</span>
-                  <span>Padrón</span>
-                </NavLink>
-
                 <button
                   onClick={handleCerrarSesion}
                   title="Cerrar Sesión"
@@ -446,22 +418,6 @@ export default function Navbar() {
                   >
                     <span>🏫</span>
                     <span>Instituciones</span>
-                  </NavLink>
-                  <NavLink
-                    to="/consejos-comunales/registros"
-                    onClick={() => setMenuAbierto(false)}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-blue-800 text-white hover:bg-blue-700"
-                  >
-                    <span>🏛️</span>
-                    <span>Registros Comunales</span>
-                  </NavLink>
-                  <NavLink
-                    to="/consejos-comunales/registros?tab=padron"
-                    onClick={() => setMenuAbierto(false)}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-blue-800 text-white hover:bg-blue-700"
-                  >
-                    <span>👥</span>
-                    <span>Gestión de Padrón</span>
                   </NavLink>
                   <button
                     onClick={() => {
