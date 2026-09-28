@@ -1,6 +1,7 @@
 const { Institucion } = require('../models');
 const { Op } = require('sequelize');
 const ExcelJS = require('exceljs');
+const { getJson, setJson, delByPattern } = require('../config/redis');
 
 const buildWhereClause = (query) => {
   const { municipio, turno, search } = query;
@@ -67,12 +68,29 @@ const buildWhereClause = (query) => {
 
 exports.getAll = async (req, res) => {
   try {
+    const { municipio, turno, search } = req.query;
+    // ⚡ Cache-Aside: si no es búsqueda dinámica por texto libre, consultar Redis
+    const cacheKey = !search
+      ? `cache:inst:${(municipio || 'ALL').toUpperCase()}:${(turno || 'ALL').toUpperCase()}`
+      : null;
+
+    if (cacheKey) {
+      const cached = await getJson(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+    }
+
     const where = { activo: true, ...buildWhereClause(req.query) };
 
     const instituciones = await Institucion.findAll({
       where,
       order: [['municipio', 'ASC'], ['nombre', 'ASC']]
     });
+
+    if (cacheKey) {
+      await setJson(cacheKey, instituciones, 86400); // 24 horas en Redis
+    }
 
     return res.json(instituciones);
   } catch (error) {
@@ -125,11 +143,21 @@ exports.create = async (req, res) => {
       max_cocineros: parseInt(max_cocineros || 0, 10)
     });
 
+    // ⚡ Invalidar caché de instituciones y capacidades en Redis
+    invalidarCacheInstituciones();
+
     return res.status(201).json(nueva);
   } catch (error) {
     console.error('Error al crear institución:', error);
     return res.status(500).json({ error: 'Error al registrar institución' });
   }
+};
+
+const invalidarCacheInstituciones = () => {
+  Promise.all([
+    delByPattern('cache:inst:*'),
+    delByPattern('cache:cap:*')
+  ]).catch(err => console.warn('⚠️ [Redis Invalidation Error]:', err.message));
 };
 
 exports.update = async (req, res) => {
@@ -166,6 +194,8 @@ exports.update = async (req, res) => {
       activo: activo !== undefined ? activo : institucion.activo
     });
 
+    invalidarCacheInstituciones();
+
     return res.json(institucion);
   } catch (error) {
     console.error('Error al actualizar institución:', error);
@@ -183,6 +213,8 @@ exports.delete = async (req, res) => {
 
     // Soft delete o borrado definitivo
     await institucion.destroy();
+    invalidarCacheInstituciones();
+
     return res.json({ mensaje: 'Institución eliminada con éxito' });
   } catch (error) {
     console.error('Error al eliminar institución:', error);
@@ -204,6 +236,8 @@ exports.deleteBatch = async (req, res) => {
       }
     });
 
+    invalidarCacheInstituciones();
+
     return res.json({
       ok: true,
       mensaje: `${eliminados} instituciones eliminadas exitosamente`,
@@ -218,6 +252,12 @@ exports.deleteBatch = async (req, res) => {
 // Resumen de capacidad agregada por municipio y turno
 exports.getCapacidadMunicipios = async (req, res) => {
   try {
+    const cacheKey = 'cache:cap:municipios';
+    const cached = await getJson(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const instituciones = await Institucion.findAll({ where: { activo: true } });
     const resumen = {};
 
@@ -242,7 +282,10 @@ exports.getCapacidadMunicipios = async (req, res) => {
       resumen[mun].max_cocineros += (inst.max_cocineros || 0);
     });
 
-    return res.json(Object.values(resumen));
+    const resultado = Object.values(resumen);
+    await setJson(cacheKey, resultado, 86400); // 24 horas
+
+    return res.json(resultado);
   } catch (error) {
     console.error('Error al calcular capacidades por municipio:', error);
     return res.status(500).json({ error: 'Error al calcular capacidades' });
@@ -519,6 +562,8 @@ exports.importarExcel = async (req, res) => {
         errores.push(`Fila ${rowNumber} (${rawNombre}): ${rowErr.message}`);
       }
     }
+
+    invalidarCacheInstituciones();
 
     return res.json({
       ok: true,

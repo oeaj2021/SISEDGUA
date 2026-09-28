@@ -17,6 +17,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # Cache en Memoria y Rate Limiting Distribuido con Redis 7
+  redis:
+    image: redis:7-alpine
+    container_name: sisedgua_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning --maxmemory 256mb --maxmemory-policy allkeys-lru
+    expose:
+      - "6379"
+    volumes:
+      - sisedgua_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   # Backend Node.js / Express API
   backend:
     build:
@@ -34,6 +50,9 @@ services:
       DB_NAME: ${DB_NAME:-sisedgua}
       DB_USER: ${DB_USER:-sisedgua_admin}
       DB_PASS: ${DB_PASS:-557f49dc843f5fe53b04c860103b28b0}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       JWT_SECRET: ${JWT_SECRET:-a68c7a75d1e8f02751941bb26ba5d1fe056b55b0301d40f7178ab4738cdec51a}
       DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@sisedgua.ve}
       DEFAULT_ADMIN_PASS: ${DEFAULT_ADMIN_PASS:-okmLIqlAFOWzIg@2026!}
@@ -41,6 +60,8 @@ services:
       TZ: America/Caracas
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # Frontend Web (React SPA + Reverse Proxy Nginx para Dokploy)
@@ -57,4 +78,6 @@ services:
 
 volumes:
   sisedgua_pgdata:
+    driver: local
+  sisedgua_redisdata:
     driver: local

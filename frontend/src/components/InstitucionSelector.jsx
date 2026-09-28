@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getInstituciones } from '../services/api';
 
+// Cache en memoria del navegador para evitar llamadas repetidas al cambiar de municipio
+const municipioInstCache = new Map();
+
 /**
  * Selector de institución con precarga dinámica por municipio.
  * Si el usuario no encuentra la suya, puede activar el modo manual para escribirla.
@@ -21,11 +24,20 @@ export default function InstitucionSelector({ municipiosSeleccionados, value, on
       return;
     }
 
-    setLoading(true);
     const primerMunicipio = municipiosSeleccionados[0];
+    
+    // Si ya lo tenemos en caché de cliente, evitamos roundtrip de red
+    if (municipioInstCache.has(primerMunicipio)) {
+      setInstituciones(municipioInstCache.get(primerMunicipio));
+      return;
+    }
+
+    setLoading(true);
     getInstituciones({ municipio: primerMunicipio })
       .then((res) => {
-        setInstituciones(res.data || []);
+        const data = res.data || [];
+        municipioInstCache.set(primerMunicipio, data);
+        setInstituciones(data);
       })
       .catch((err) => {
         console.error('Error cargando instituciones:', err);

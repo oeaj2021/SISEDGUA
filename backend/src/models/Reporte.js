@@ -102,7 +102,10 @@ const Reporte = sequelize.define('Reporte', {
   indexes: [
     { fields: ['fecha'] },
     { fields: ['turno'] },
-    { fields: ['nombre_institucion'] }
+    { fields: ['nombre_institucion'] },
+    { fields: ['fecha', 'turno'] },
+    { fields: ['fecha', 'turno', 'nombre_institucion'] },
+    { fields: ['fecha', 'institucion_id', 'turno'] }
   ]
 });
 

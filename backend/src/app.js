@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
@@ -20,8 +21,8 @@ const sqlInjectionGuard = require('./middlewares/sqlInjectionGuard');
 
 const app = express();
 
-// Habilitar trust proxy para reconocer correctamente IPs detrás de Dokploy/Traefik/Nginx
-app.set('trust proxy', 1);
+// Habilitar trust proxy para reconocer correctamente IPs detrás de Dokploy/Traefik/Nginx/Cloudflare
+app.set('trust proxy', true);
 
 // Cabeceras de seguridad HTTP con Helmet (Blindaje contra XSS, Clickjacking, MIME-sniffing)
 app.use(helmet({
@@ -49,26 +50,46 @@ app.use(cors({
   credentials: true
 }));
 
+// ⚡ Compresión Gzip/Deflate para optimizar rendimiento de red en picos de 40,000 usuarios
+app.use(compression({
+  threshold: 1024, // Comprime respuestas mayores a 1KB
+  level: 6
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 🛡️ Middleware de Protección Activa contra Inyección SQL y Payloads Maliciosos
 app.use(sqlInjectionGuard);
 
-// 🛡️ Rate Limiters (Prevención de Fuerza Bruta y Ataques de Denegación de Servicio DoS)
+// 🛡️ Rate Limiters Distribuidos con Redis 7 (Con Graceful Fallback en memoria si Redis no está activo)
+const { RedisStore } = require('rate-limit-redis');
+const { redisClient } = require('./config/redis');
+
+const createLimiterStore = (prefix) => {
+  return new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+    prefix: `rl:${prefix}:`
+  });
+};
+
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 300,
+  max: 3000, // 3000 peticiones cada 15 min por IP real
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true, // Si Redis se reinicia, la petición pasa sin error 500
+  store: createLimiterStore('gen'),
   message: { error: 'Límite de solicitudes alcanzado. Por favor, intente más tarde.' }
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // Máximo 10 intentos de autenticación por ventana
+  max: 15, // Máximo 15 intentos de autenticación por ventana
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
+  store: createLimiterStore('auth'),
   message: { error: 'Demasiados intentos de acceso fallidos. Por seguridad, intente de nuevo en 15 minutos.' }
 });
 
@@ -77,14 +98,18 @@ const submitLimiter = rateLimit({
   max: 50, // 50 envíos de formulario cada 15 min por IP
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
+  store: createLimiterStore('sub'),
   message: { error: 'Ha enviado un número elevado de registros. Espere unos minutos antes de continuar.' }
 });
 
 const consultaLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minuto
-  max: 60, // 60 consultas por minuto para autocompletado
+  max: 120, // 120 consultas por minuto para autocompletado
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
+  store: createLimiterStore('con'),
   message: { error: 'Demasiadas consultas de verificación. Por favor espere un momento.' }
 });
 
@@ -95,7 +120,8 @@ app.use('/api/', generalLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth', authRoutes);
 
-app.use('/api/reportes', submitLimiter, reportesRoutes);
+// Nota de arquitectura: submitLimiter se aplica a la mutación POST en reportesRoutes
+app.use('/api/reportes', reportesRoutes);
 app.use('/api/instituciones', institucionesRoutes);
 
 app.use('/api/consejos-comunales', consejosComunalesRoutes);

@@ -62,7 +62,9 @@ const Institucion = sequelize.define('Institucion', {
   updatedAt: 'updated_at',
   indexes: [
     { fields: ['municipio'] },
-    { fields: ['turno'] }
+    { fields: ['turno'] },
+    { fields: ['municipio', 'activo'] },
+    { fields: ['municipio', 'turno', 'activo'] }
   ]
 });
 

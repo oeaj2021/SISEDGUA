@@ -1,9 +1,17 @@
 const { Reporte } = require('../models');
 const { Op } = require('sequelize');
+const { getJson, setJson } = require('../config/redis');
 
 exports.getStats = async (req, res) => {
   try {
     const { desde, hasta, turno, municipio } = req.query;
+    const cacheKey = `cache:dashboard:stats:${desde || 'all'}:${hasta || 'all'}:${turno || 'all'}:${municipio || 'all'}`;
+
+    const cached = await getJson(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const where = {};
 
     if (desde && hasta) {
@@ -70,7 +78,7 @@ exports.getStats = async (req, res) => {
       ? ((cocina_asistente / total_cocina) * 100).toFixed(2)
       : '0.00';
 
-    return res.json({
+    const result = {
       total_reportes,
       estudiantes_asistente,
       estudiantes_inasistente,
@@ -91,7 +99,11 @@ exports.getStats = async (req, res) => {
       personal_total_inasistente,
       total_personal,
       pct_personal_asistencia
-    });
+    };
+
+    setJson(cacheKey, result, 60).catch(err => console.error('Error guardando cache dashboard:stats:', err.message));
+
+    return res.json(result);
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);
     return res.status(500).json({ error: 'Error al calcular estadísticas' });
@@ -101,6 +113,13 @@ exports.getStats = async (req, res) => {
 exports.getPorMunicipio = async (req, res) => {
   try {
     const { desde, hasta, turno } = req.query;
+    const cacheKey = `cache:dashboard:mun:${desde || 'all'}:${hasta || 'all'}:${turno || 'all'}`;
+
+    const cached = await getJson(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const where = {};
 
     if (desde && hasta) {
@@ -154,7 +173,10 @@ exports.getPorMunicipio = async (req, res) => {
       }
     });
 
-    return res.json(Object.values(acumulado));
+    const result = Object.values(acumulado);
+    setJson(cacheKey, result, 60).catch(err => console.error('Error guardando cache dashboard:mun:', err.message));
+
+    return res.json(result);
   } catch (error) {
     console.error('Error en desglose por municipio:', error);
     return res.status(500).json({ error: 'Error al calcular datos por municipio' });
@@ -164,6 +186,13 @@ exports.getPorMunicipio = async (req, res) => {
 exports.getTendencia = async (req, res) => {
   try {
     const { desde, hasta, turno, municipio } = req.query;
+    const cacheKey = `cache:dashboard:tend:${desde || 'all'}:${hasta || 'all'}:${turno || 'all'}:${municipio || 'all'}`;
+
+    const cached = await getJson(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const where = {};
 
     if (desde && hasta) {
@@ -197,7 +226,10 @@ exports.getTendencia = async (req, res) => {
       dias[fecha].reportes += 1;
     });
 
-    return res.json(Object.values(dias));
+    const result = Object.values(dias);
+    setJson(cacheKey, result, 60).catch(err => console.error('Error guardando cache dashboard:tend:', err.message));
+
+    return res.json(result);
   } catch (error) {
     console.error('Error en cálculo de tendencia:', error);
     return res.status(500).json({ error: 'Error al calcular tendencia temporal' });

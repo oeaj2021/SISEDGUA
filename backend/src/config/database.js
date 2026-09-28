@@ -16,7 +16,17 @@ const sequelize = new Sequelize(
       createdAt: 'created_at',
       updatedAt: 'updated_at'
     },
-    timezone: '-04:00' // America/Caracas
+    timezone: '-04:00', // America/Caracas
+    pool: {
+      max: parseInt(process.env.DB_POOL_MAX, 10) || 50,
+      min: parseInt(process.env.DB_POOL_MIN, 10) || 10,
+      acquire: 30000,
+      idle: 10000
+    },
+    dialectOptions: {
+      statement_timeout: 10000, // Evita locks y consultas zombis en picos masivos
+      idle_in_transaction_session_timeout: 10000
+    }
   }
 );
 

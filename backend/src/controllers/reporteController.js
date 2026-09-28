@@ -1,4 +1,5 @@
 const { Reporte, Institucion } = require('../models');
+const { getJson, setJson, delByPattern } = require('../config/redis');
 
 const MUNICIPIOS_VALIDOS = [
   'ROSCIO', 'ORTIZ', 'MELLADO', 'MIRANDA', 'GUAYABAL', 'CAMAGUAN',
@@ -73,6 +74,13 @@ exports.create = async (req, res) => {
       incidencias: incidencias.trim()
     });
 
+    // ⚡ Invalidación reactiva asíncrona de caché en Redis (no bloquea el hilo HTTP)
+    Promise.all([
+      delByPattern('cache:reportes:*'),
+      delByPattern('cache:dashboard:*'),
+      delByPattern('cache:dup:*')
+    ]).catch(err => console.warn('⚠️ [Redis Invalidation Error]:', err.message));
+
     return res.status(201).json({
       ok: true,
       mensaje: 'Reporte registrado exitosamente',
@@ -91,6 +99,13 @@ exports.checkDuplicado = async (req, res) => {
       return res.json({ duplicado: false });
     }
 
+    const safeName = Buffer.from(nombre_institucion.trim()).toString('base64');
+    const cacheKey = `cache:dup:${fecha}:${turno}:${safeName}`;
+    const cached = await getJson(cacheKey);
+    if (cached !== null) {
+      return res.json(cached);
+    }
+
     const existe = await Reporte.findOne({
       where: {
         nombre_institucion: nombre_institucion.trim(),
@@ -99,7 +114,10 @@ exports.checkDuplicado = async (req, res) => {
       }
     });
 
-    return res.json({ duplicado: !!existe });
+    const resultado = { duplicado: !!existe };
+    await setJson(cacheKey, resultado, 120); // 2 minutos de caché para UI inmediata
+
+    return res.json(resultado);
   } catch (error) {
     console.error('Error al chequear duplicado:', error);
     return res.status(500).json({ error: 'Error al verificar duplicado' });
@@ -113,6 +131,13 @@ exports.getConteoHoy = async (req, res) => {
     const localMs = now.getTime() + (now.getTimezoneOffset() + venezuelaOffset) * 60000;
     const local = new Date(localMs);
     const fechaHoy = local.toISOString().split('T')[0];
+
+    // ⚡ Cache-Aside: comprobar si ya está calculado en Redis
+    const cacheKey = `cache:reportes:conteo:${fechaHoy}`;
+    const cached = await getJson(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
 
     const reportesHoy = await Reporte.findAll({
       where: { fecha: fechaHoy },
@@ -145,11 +170,16 @@ exports.getConteoHoy = async (req, res) => {
       }
     });
 
-    return res.json({
+    const resultado = {
       fecha: fechaHoy,
       total_general: totalGeneral,
       por_municipio: Object.values(conteo)
-    });
+    };
+
+    // Guardar en Redis con TTL de 300 segundos (5 minutos)
+    await setJson(cacheKey, resultado, 300);
+
+    return res.json(resultado);
   } catch (error) {
     console.error('Error al obtener conteo de hoy:', error);
     return res.status(500).json({ error: 'Error al consultar conteo de reportes' });
