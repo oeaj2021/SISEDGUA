@@ -12,6 +12,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let isRedirecting = false;
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('sisedgua_token');
+      localStorage.removeItem('sisedgua_nombre');
+      localStorage.removeItem('sisedgua_email');
+
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !isRedirecting) {
+        isRedirecting = true;
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}&expired=true`;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+
 // Llamadas API - Reportes & Público
 export const submitReporte = (data) => api.post('/reportes', data);
 export const checkDuplicado = (params) => api.get('/reportes/check-duplicado', { params });

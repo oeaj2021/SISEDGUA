@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import FormManana from './pages/FormManana';
@@ -13,8 +13,14 @@ import { getRutaSegunHorario, getTurnoActivo } from './utils/horario';
 
 function RutaProtegida({ children }) {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  const location = useLocation();
+  return isAuthenticated ? (
+    children
+  ) : (
+    <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />
+  );
 }
+
 
 /**
  * Guardián de ruta de turno:

@@ -7,6 +7,7 @@ export default function Login() {
   const { loginAdmin } = useAuth();
   const [searchParams] = useSearchParams();
   const redirectParam = searchParams.get('redirect');
+  const isExpired = searchParams.get('expired') === 'true';
 
   const esComuc =
     redirectParam?.includes('consejos') ||
@@ -14,6 +15,7 @@ export default function Login() {
     (typeof window !== 'undefined' &&
       (window.location.hostname === 'comuc.sisedgua.site' ||
         window.location.hostname.startsWith('comuc.')));
+
 
   const destinoFinal = redirectParam || (esComuc ? '/consejos-comunales/registros' : '/dashboard');
 
@@ -89,12 +91,20 @@ export default function Login() {
             />
           </div>
 
+          {isExpired && !error && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-3 rounded-xl flex items-center gap-2">
+              <span>⏳</span>
+              <span className="font-medium">Tu sesión ha expirado por seguridad. Por favor, inicia sesión nuevamente para continuar.</span>
+            </div>
+          )}
+
           {error && (
             <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs px-4 py-3 rounded-xl flex items-center gap-2">
               <span>⚠️</span>
               <span className="font-medium">{error}</span>
             </div>
           )}
+
 
           <button
             type="submit"
