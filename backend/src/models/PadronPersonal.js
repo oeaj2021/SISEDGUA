@@ -31,6 +31,14 @@ const PadronPersonal = sequelize.define('PadronPersonal', {
   municipio: {
     type: DataTypes.STRING(100),
     allowNull: true
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    field: 'created_at'
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    field: 'updated_at'
   }
 }, {
   tableName: 'padron_personal_educativo',

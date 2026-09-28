@@ -90,6 +90,14 @@ const RegistroConsejoComunal = sequelize.define('RegistroConsejoComunal', {
   ip_registro: {
     type: DataTypes.STRING(50),
     allowNull: true
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    field: 'created_at'
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    field: 'updated_at'
   }
 }, {
   tableName: 'registros_consejos_comunales',
