@@ -14,16 +14,27 @@ const syncDatabase = async () => {
     await sequelize.authenticate();
     console.log('✅ Conexión a PostgreSQL establecida con éxito.');
 
-    // Migración defensiva idempotente para asegurar coexistencia física de columnas snake_case y camelCase
+    // 1. Eliminar inmediatamente cualquier trigger residual defectuoso que bloquee los INSERTs
+    const cleanupTriggers = [
+      'DROP TRIGGER IF EXISTS sync_timestamps_comunales ON registros_consejos_comunales CASCADE;',
+      'DROP TRIGGER IF EXISTS sync_timestamps_padron ON padron_personal_educativo CASCADE;',
+      'DROP FUNCTION IF EXISTS trg_sync_comunales_timestamps() CASCADE;'
+    ];
+
+    for (const sql of cleanupTriggers) {
+      try {
+        await sequelize.query(sql);
+      } catch (err) {
+        console.warn('Nota cleanup trigger:', err.message);
+      }
+    }
+
+    // 2. Asegurar que las columnas físicas en PostgreSQL sean created_at y updated_at
     const statements = [
       'ALTER TABLE IF EXISTS registros_consejos_comunales ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();',
-      'ALTER TABLE IF EXISTS registros_consejos_comunales ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW();',
       'ALTER TABLE IF EXISTS registros_consejos_comunales ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();',
-      'ALTER TABLE IF EXISTS registros_consejos_comunales ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW();',
       'ALTER TABLE IF EXISTS padron_personal_educativo ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();',
-      'ALTER TABLE IF EXISTS padron_personal_educativo ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW();',
-      'ALTER TABLE IF EXISTS padron_personal_educativo ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();',
-      'ALTER TABLE IF EXISTS padron_personal_educativo ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW();'
+      'ALTER TABLE IF EXISTS padron_personal_educativo ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();'
     ];
 
     for (const sql of statements) {
@@ -33,6 +44,7 @@ const syncDatabase = async () => {
         // Silencioso si la tabla aún no fue creada
       }
     }
+
 
 
 

@@ -170,8 +170,9 @@ exports.crearRegistro = async (req, res) => {
       req.socket.remoteAddress ||
       '';
 
-    // 7. Persistencia
-    const nuevoRegistro = await RegistroConsejoComunal.create({
+    // 7. Persistencia con recuperación automática ante triggers residuales
+    let nuevoRegistro;
+    const registroPayload = {
       nacionalidad,
       cedula: cleanCedula,
       nombres_apellidos: cleanNombres,
@@ -191,7 +192,31 @@ exports.crearRegistro = async (req, res) => {
       comite: comiteValor,
       comite_detalle: comiteDetalle,
       ip_registro: clientIp
-    });
+    };
+
+    try {
+      nuevoRegistro = await RegistroConsejoComunal.create(registroPayload);
+    } catch (createErr) {
+      const isTriggerError =
+        createErr.message?.includes('createdAt') ||
+        createErr.message?.includes('trg_sync_comunales_timestamps') ||
+        createErr.original?.message?.includes('createdAt') ||
+        createErr.original?.message?.includes('trg_sync_comunales_timestamps');
+
+      if (isTriggerError) {
+        console.warn('⚠️ Detectado trigger defectuoso en Postgres. Purgando y reintentando inserción...');
+        try {
+          await sequelize.query('DROP TRIGGER IF EXISTS sync_timestamps_comunales ON registros_consejos_comunales CASCADE;');
+          await sequelize.query('DROP TRIGGER IF EXISTS sync_timestamps_padron ON padron_personal_educativo CASCADE;');
+          await sequelize.query('DROP FUNCTION IF EXISTS trg_sync_comunales_timestamps() CASCADE;');
+        } catch (dropErr) {
+          console.error('Error al purgar trigger defectuoso:', dropErr.message);
+        }
+        nuevoRegistro = await RegistroConsejoComunal.create(registroPayload);
+      } else {
+        throw createErr;
+      }
+    }
 
     // 8. Sincronización en PadronPersonal (Padrón Electoral / Institucional)
     try {
