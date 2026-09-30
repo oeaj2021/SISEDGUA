@@ -41,8 +41,8 @@ const getSemanaInfo = (dateStr) => {
   };
 };
 
-const estilizarEncabezado = (ws, bgColor = 'FF1E3A8A') => {
-  const headerRow = ws.getRow(1);
+const estilizarEncabezado = (ws, bgColor = 'FF1E3A8A', rowNumber = 1) => {
+  const headerRow = ws.getRow(rowNumber);
   headerRow.height = 30;
   headerRow.eachCell(cell => {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
@@ -156,9 +156,9 @@ const aplicarEstilosHojaDetalle = (ws, data) => {
   ws.autoFilter = { from: 'A1', to: 'U1' };
 };
 
-// Generar Resumen Diario
-const agregarHojaResumenDiario = (wb, reportes) => {
-  const ws = wb.addWorksheet('RESUMEN DIARIO');
+// 1. Resumen Diario (Estadal o por Municipio específico)
+const agregarHojaResumenDiario = (wb, reportes, nombreHoja = 'RESUMEN DIARIO') => {
+  const ws = wb.addWorksheet(nombreHoja.substring(0, 31));
   ws.columns = [
     { header: 'Fecha', key: 'fecha', width: 14 },
     { header: 'Día', key: 'dia_semana', width: 14 },
@@ -183,7 +183,7 @@ const agregarHojaResumenDiario = (wb, reportes) => {
     { header: '% Asist. Global', key: 'global_pct', width: 15 }
   ];
 
-  estilizarEncabezado(ws, 'FF1D4ED8'); // Azul rey
+  estilizarEncabezado(ws, 'FF1D4ED8');
 
   const diasMap = {};
   reportes.forEach(r => {
@@ -286,7 +286,6 @@ const agregarHojaResumenDiario = (wb, reportes) => {
     });
   });
 
-  // Fila de Total / Consolidado
   const tEstTotal = totEstA + totEstI;
   const tDocTotal = totDocA + totDocI;
   const tPersAsist = totDocA + totAdmA + totObrA + totCocA;
@@ -325,9 +324,9 @@ const agregarHojaResumenDiario = (wb, reportes) => {
   });
 };
 
-// Generar Resumen por Turno (MAÑANA vs TARDE y desglose diario)
-const agregarHojaResumenTurno = (wb, reportes) => {
-  const ws = wb.addWorksheet('RESUMEN POR TURNO');
+// 2. Resumen por Turno (Estadal o por Municipio)
+const agregarHojaResumenTurno = (wb, reportes, nombreHoja = 'RESUMEN POR TURNO') => {
+  const ws = wb.addWorksheet(nombreHoja.substring(0, 31));
   ws.columns = [
     { header: 'Turno', key: 'turno', width: 14 },
     { header: 'Fecha', key: 'fecha', width: 14 },
@@ -346,15 +345,13 @@ const agregarHojaResumenTurno = (wb, reportes) => {
     { header: '% Asist. Global', key: 'global_pct', width: 15 }
   ];
 
-  estilizarEncabezado(ws, 'FF4F46E5'); // Índigo profesional
+  estilizarEncabezado(ws, 'FF4F46E5');
 
-  // 1. Agrupar por Turno Global
   const porTurnoGlobal = {
-    'MAÑANA': { turno: 'MAÑANA', reportes: 0, instituciones: new Set(), estA: 0, estI: 0, docA: 0, docI: 0, admA: 0, admI: 0, obrA: 0, obrI: 0, cocA: 0, cocI: 0 },
-    'TARDE': { turno: 'TARDE', reportes: 0, instituciones: new Set(), estA: 0, estI: 0, docA: 0, docI: 0, admA: 0, admI: 0, obrA: 0, obrI: 0, cocA: 0, cocI: 0 }
+    'MAÑANA': { turno: 'MAÑANA', instituciones: new Set(), estA: 0, estI: 0, docA: 0, docI: 0, admA: 0, admI: 0, obrA: 0, obrI: 0, cocA: 0, cocI: 0 },
+    'TARDE': { turno: 'TARDE', instituciones: new Set(), estA: 0, estI: 0, docA: 0, docI: 0, admA: 0, admI: 0, obrA: 0, obrI: 0, cocA: 0, cocI: 0 }
   };
 
-  // 2. Agrupar por Fecha x Turno
   const fechaTurnoMap = {};
 
   reportes.forEach(r => {
@@ -363,10 +360,8 @@ const agregarHojaResumenTurno = (wb, reportes) => {
     const ftKey = `${f}_${t}`;
 
     const instKey = r.institucion_id || r.nombre_institucion?.trim().toUpperCase();
-    if (instKey) {
-      porTurnoGlobal[t].instituciones.add(instKey);
-    }
-    porTurnoGlobal[t].reportes += 1;
+    if (instKey) porTurnoGlobal[t].instituciones.add(instKey);
+
     porTurnoGlobal[t].estA += r.matricula_asistente || 0;
     porTurnoGlobal[t].estI += r.matricula_inasistente || 0;
     porTurnoGlobal[t].docA += r.docentes_asistente || 0;
@@ -399,7 +394,6 @@ const agregarHojaResumenTurno = (wb, reportes) => {
     fechaTurnoMap[ftKey].cocI += r.cocina_inasistente || 0;
   });
 
-  // Agregar filas de resumen global por turno
   ['MAÑANA', 'TARDE'].forEach(t => {
     const item = porTurnoGlobal[t];
     const estTotal = item.estA + item.estI;
@@ -434,15 +428,13 @@ const agregarHojaResumenTurno = (wb, reportes) => {
       global_pct: gPct
     });
 
-    estilizarFilaTotal(row, t === 'MAÑANA' ? 'FFFEF3C7' : 'FFE0E7FF'); // Ámbar tenue vs Índigo tenue
+    estilizarFilaTotal(row, t === 'MAÑANA' ? 'FFFEF3C7' : 'FFE0E7FF');
     row.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
   });
 
-  // Fila separadora
   const sep = ws.addRow({ turno: '--- DETALLE DIARIO POR TURNO ---' });
   sep.font = { bold: true, italic: true, color: { argb: 'FF64748B' } };
 
-  // Detalle por Fecha y Turno
   const ftList = Object.values(fechaTurnoMap).sort((a, b) => {
     if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
     return a.turno.localeCompare(b.turno);
@@ -486,9 +478,9 @@ const agregarHojaResumenTurno = (wb, reportes) => {
   });
 };
 
-// Generar Resumen Semanal
-const agregarHojaResumenSemanal = (wb, reportes) => {
-  const ws = wb.addWorksheet('RESUMEN SEMANAL');
+// 3. Resumen Semanal (Estadal o por Municipio)
+const agregarHojaResumenSemanal = (wb, reportes, nombreHoja = 'RESUMEN SEMANAL') => {
+  const ws = wb.addWorksheet(nombreHoja.substring(0, 31));
   ws.columns = [
     { header: 'Semana Calendario', key: 'semana', width: 34 },
     { header: 'Días con Registro', key: 'dias_count', width: 17 },
@@ -507,7 +499,7 @@ const agregarHojaResumenSemanal = (wb, reportes) => {
     { header: '% Asist. Global', key: 'global_pct', width: 15 }
   ];
 
-  estilizarEncabezado(ws, 'FF047857'); // Verde Esmeralda Sala Situacional
+  estilizarEncabezado(ws, 'FF047857');
 
   const semanasMap = {};
   reportes.forEach(r => {
@@ -588,7 +580,6 @@ const agregarHojaResumenSemanal = (wb, reportes) => {
     row.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
   });
 
-  // Fila consolidada final
   const tEstTotal = totEstA + totEstI;
   const tDocTotal = totDocA + totDocI;
   const tPersTotal = totPersA + totPersI;
@@ -613,11 +604,11 @@ const agregarHojaResumenSemanal = (wb, reportes) => {
     global_pct: tGranTotal > 0 ? `${((tGranAsist / tGranTotal) * 100).toFixed(1)}%` : '0.0%'
   });
 
-  estilizarFilaTotal(totalRow, 'FFD1FAE5'); // Verde suave
+  estilizarFilaTotal(totalRow, 'FFD1FAE5');
   totalRow.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
 };
 
-// Generar Resumen por Municipio
+// 4. Resumen General Consolidado por Municipio (15 municipios)
 const agregarHojaResumenMunicipio = (wb, reportes, todasInstituciones) => {
   const ws = wb.addWorksheet('RESUMEN POR MUNICIPIO');
   ws.columns = [
@@ -640,7 +631,7 @@ const agregarHojaResumenMunicipio = (wb, reportes, todasInstituciones) => {
     { header: '% Asist. Global', key: 'global_pct', width: 15 }
   ];
 
-  estilizarEncabezado(ws, 'FF0F766E'); // Verde Azulado Teal Elegante
+  estilizarEncabezado(ws, 'FF0F766E');
 
   const instPorMun = {};
   todasInstituciones.forEach(inst => {
@@ -736,7 +727,6 @@ const agregarHojaResumenMunicipio = (wb, reportes, todasInstituciones) => {
     row.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
   });
 
-  // Fila total del estado Guárico
   const totalRow = ws.addRow({
     municipio: 'ESTADO GUÁRICO',
     total_catalogo: tCat,
@@ -759,13 +749,313 @@ const agregarHojaResumenMunicipio = (wb, reportes, todasInstituciones) => {
       : '0.0%'
   });
 
-  estilizarFilaTotal(totalRow, 'FFCCFBF1'); // Teal suave
+  estilizarFilaTotal(totalRow, 'FFCCFBF1');
   totalRow.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
 };
 
-// Generar Hoja de Instituciones Sin Reportar
-const agregarHojaNoReportadas = (wb, noReportadas) => {
-  const ws = wb.addWorksheet('INSTITUCIONES SIN REPORTAR');
+// 5. NUEVO: Resumen Diario Desglosado por Municipio (Municipio x Día)
+const agregarHojaDiarioPorMunicipio = (wb, reportes) => {
+  const ws = wb.addWorksheet('DIARIO POR MUNICIPIO');
+  ws.columns = [
+    { header: 'Municipio', key: 'municipio', width: 20 },
+    { header: 'Fecha', key: 'fecha', width: 14 },
+    { header: 'Día', key: 'dia', width: 13 },
+    { header: 'Inst. Reportadas', key: 'inst_count', width: 17 },
+    { header: 'Est. Asist.', key: 'est_asist', width: 13 },
+    { header: 'Est. Inasist.', key: 'est_inasist', width: 14 },
+    { header: 'Total Est.', key: 'est_total', width: 13 },
+    { header: '% Asist. Est.', key: 'est_pct', width: 14 },
+    { header: 'Doc. Asist.', key: 'doc_asist', width: 13 },
+    { header: 'Doc. Inasist.', key: 'doc_inasist', width: 14 },
+    { header: 'Total Pers. Asist.', key: 'pers_asist', width: 17 },
+    { header: 'Total Pers. Inasist.', key: 'pers_inasist', width: 18 },
+    { header: 'Total Personal', key: 'pers_total', width: 15 },
+    { header: '% Asist. Pers.', key: 'pers_pct', width: 14 },
+    { header: '% Asist. Global', key: 'global_pct', width: 15 }
+  ];
+
+  estilizarEncabezado(ws, 'FF0284C7'); // Azul Cian Profesional
+
+  const munFechaMap = {};
+
+  reportes.forEach(r => {
+    const muns = Array.isArray(r.municipio) ? r.municipio : [r.municipio];
+    muns.forEach(m => {
+      const munNorm = m ? m.toUpperCase().trim() : 'SIN_MUNICIPIO';
+      const f = r.fecha;
+      const key = `${munNorm}_${f}`;
+
+      if (!munFechaMap[key]) {
+        const dt = new Date(f + 'T00:00:00');
+        munFechaMap[key] = {
+          municipio: munNorm,
+          fecha: f,
+          dia: DIAS_SEMANA[dt.getDay()],
+          instituciones: new Set(),
+          estA: 0, estI: 0, docA: 0, docI: 0, admA: 0, admI: 0, obrA: 0, obrI: 0, cocA: 0, cocI: 0
+        };
+      }
+
+      const instKey = r.institucion_id || r.nombre_institucion?.trim().toUpperCase();
+      if (instKey) munFechaMap[key].instituciones.add(instKey);
+
+      munFechaMap[key].estA += r.matricula_asistente || 0;
+      munFechaMap[key].estI += r.matricula_inasistente || 0;
+      munFechaMap[key].docA += r.docentes_asistente || 0;
+      munFechaMap[key].docI += r.docentes_inasistente || 0;
+      munFechaMap[key].admA += r.admin_asistente || 0;
+      munFechaMap[key].admI += r.admin_inasistente || 0;
+      munFechaMap[key].obrA += r.obrero_asistente || 0;
+      munFechaMap[key].obrI += r.obrero_inasistente || 0;
+      munFechaMap[key].cocA += r.cocina_asistente || 0;
+      munFechaMap[key].cocI += r.cocina_inasistente || 0;
+    });
+  });
+
+  const listado = Object.values(munFechaMap).sort((a, b) => {
+    if (a.municipio !== b.municipio) return a.municipio.localeCompare(b.municipio);
+    return a.fecha.localeCompare(b.fecha);
+  });
+
+  listado.forEach(item => {
+    const estTotal = item.estA + item.estI;
+    const estPct = estTotal > 0 ? `${((item.estA / estTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const pAsist = item.docA + item.admA + item.obrA + item.cocA;
+    const pInasist = item.docI + item.admI + item.obrI + item.cocI;
+    const pTotal = pAsist + pInasist;
+    const pPct = pTotal > 0 ? `${((pAsist / pTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const gTotal = estTotal + pTotal;
+    const gAsist = item.estA + pAsist;
+    const gPct = gTotal > 0 ? `${((gAsist / gTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const row = ws.addRow({
+      municipio: item.municipio,
+      fecha: item.fecha,
+      dia: item.dia,
+      inst_count: item.instituciones.size,
+      est_asist: item.estA,
+      est_inasist: item.estI,
+      est_total: estTotal,
+      est_pct: estPct,
+      doc_asist: item.docA,
+      doc_inasist: item.docI,
+      pers_asist: pAsist,
+      pers_inasist: pInasist,
+      pers_total: pTotal,
+      pers_pct: pPct,
+      global_pct: gPct
+    });
+
+    row.height = 20;
+    row.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
+  });
+
+  ws.autoFilter = { from: 'A1', to: 'O1' };
+};
+
+// 6. NUEVO: Resumen por Turno Desglosado por Municipio (Municipio x Turno)
+const agregarHojaTurnoPorMunicipio = (wb, reportes) => {
+  const ws = wb.addWorksheet('TURNO POR MUNICIPIO');
+  ws.columns = [
+    { header: 'Municipio', key: 'municipio', width: 20 },
+    { header: 'Turno', key: 'turno', width: 14 },
+    { header: 'Inst. Reportadas', key: 'inst_count', width: 17 },
+    { header: 'Est. Asist.', key: 'est_asist', width: 13 },
+    { header: 'Est. Inasist.', key: 'est_inasist', width: 14 },
+    { header: 'Total Est.', key: 'est_total', width: 13 },
+    { header: '% Asist. Est.', key: 'est_pct', width: 14 },
+    { header: 'Doc. Asist.', key: 'doc_asist', width: 13 },
+    { header: 'Doc. Inasist.', key: 'doc_inasist', width: 14 },
+    { header: 'Total Pers. Asist.', key: 'pers_asist', width: 17 },
+    { header: 'Total Pers. Inasist.', key: 'pers_inasist', width: 18 },
+    { header: 'Total Personal', key: 'pers_total', width: 15 },
+    { header: '% Asist. Pers.', key: 'pers_pct', width: 14 },
+    { header: '% Asist. Global', key: 'global_pct', width: 15 }
+  ];
+
+  estilizarEncabezado(ws, 'FF6366F1'); // Índigo / Violeta
+
+  const munTurnoMap = {};
+
+  reportes.forEach(r => {
+    const muns = Array.isArray(r.municipio) ? r.municipio : [r.municipio];
+    muns.forEach(m => {
+      const munNorm = m ? m.toUpperCase().trim() : 'SIN_MUNICIPIO';
+      const t = r.turno === 'TARDE' ? 'TARDE' : 'MAÑANA';
+      const key = `${munNorm}_${t}`;
+
+      if (!munTurnoMap[key]) {
+        munTurnoMap[key] = {
+          municipio: munNorm,
+          turno: t,
+          instituciones: new Set(),
+          estA: 0, estI: 0, docA: 0, docI: 0, admA: 0, admI: 0, obrA: 0, obrI: 0, cocA: 0, cocI: 0
+        };
+      }
+
+      const instKey = r.institucion_id || r.nombre_institucion?.trim().toUpperCase();
+      if (instKey) munTurnoMap[key].instituciones.add(instKey);
+
+      munTurnoMap[key].estA += r.matricula_asistente || 0;
+      munTurnoMap[key].estI += r.matricula_inasistente || 0;
+      munTurnoMap[key].docA += r.docentes_asistente || 0;
+      munTurnoMap[key].docI += r.docentes_inasistente || 0;
+      munTurnoMap[key].admA += r.admin_asistente || 0;
+      munTurnoMap[key].admI += r.admin_inasistente || 0;
+      munTurnoMap[key].obrA += r.obrero_asistente || 0;
+      munTurnoMap[key].obrI += r.obrero_inasistente || 0;
+      munTurnoMap[key].cocA += r.cocina_asistente || 0;
+      munTurnoMap[key].cocI += r.cocina_inasistente || 0;
+    });
+  });
+
+  const listado = Object.values(munTurnoMap).sort((a, b) => {
+    if (a.municipio !== b.municipio) return a.municipio.localeCompare(b.municipio);
+    return a.turno.localeCompare(b.turno);
+  });
+
+  listado.forEach(item => {
+    const estTotal = item.estA + item.estI;
+    const estPct = estTotal > 0 ? `${((item.estA / estTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const pAsist = item.docA + item.admA + item.obrA + item.cocA;
+    const pInasist = item.docI + item.admI + item.obrI + item.cocI;
+    const pTotal = pAsist + pInasist;
+    const pPct = pTotal > 0 ? `${((pAsist / pTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const gTotal = estTotal + pTotal;
+    const gAsist = item.estA + pAsist;
+    const gPct = gTotal > 0 ? `${((gAsist / gTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const row = ws.addRow({
+      municipio: item.municipio,
+      turno: item.turno,
+      inst_count: item.instituciones.size,
+      est_asist: item.estA,
+      est_inasist: item.estI,
+      est_total: estTotal,
+      est_pct: estPct,
+      doc_asist: item.docA,
+      doc_inasist: item.docI,
+      pers_asist: pAsist,
+      pers_inasist: pInasist,
+      pers_total: pTotal,
+      pers_pct: pPct,
+      global_pct: gPct
+    });
+
+    row.height = 20;
+    row.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
+  });
+
+  ws.autoFilter = { from: 'A1', to: 'N1' };
+};
+
+// 7. NUEVO: Resumen Semanal Desglosado por Municipio (Municipio x Semana)
+const agregarHojaSemanalPorMunicipio = (wb, reportes) => {
+  const ws = wb.addWorksheet('SEMANAL POR MUNICIPIO');
+  ws.columns = [
+    { header: 'Municipio', key: 'municipio', width: 20 },
+    { header: 'Semana Calendario', key: 'semana', width: 34 },
+    { header: 'Días con Registro', key: 'dias_count', width: 17 },
+    { header: 'Inst. Reportadas', key: 'inst_count', width: 17 },
+    { header: 'Est. Asist.', key: 'est_asist', width: 13 },
+    { header: 'Est. Inasist.', key: 'est_inasist', width: 14 },
+    { header: 'Total Est.', key: 'est_total', width: 13 },
+    { header: '% Asist. Est.', key: 'est_pct', width: 14 },
+    { header: 'Total Pers. Asist.', key: 'pers_asist', width: 17 },
+    { header: 'Total Pers. Inasist.', key: 'pers_inasist', width: 18 },
+    { header: 'Total Personal', key: 'pers_total', width: 15 },
+    { header: '% Asist. Pers.', key: 'pers_pct', width: 14 },
+    { header: '% Asist. Global', key: 'global_pct', width: 15 }
+  ];
+
+  estilizarEncabezado(ws, 'FF16A34A'); // Verde Intenso
+
+  const munSemanaMap = {};
+
+  reportes.forEach(r => {
+    const semInfo = getSemanaInfo(r.fecha);
+    const muns = Array.isArray(r.municipio) ? r.municipio : [r.municipio];
+
+    muns.forEach(m => {
+      const munNorm = m ? m.toUpperCase().trim() : 'SIN_MUNICIPIO';
+      const key = `${munNorm}_${semInfo.clave}`;
+
+      if (!munSemanaMap[key]) {
+        munSemanaMap[key] = {
+          municipio: munNorm,
+          semana: semInfo.label,
+          clave: semInfo.clave,
+          dias: new Set(),
+          instituciones: new Set(),
+          estA: 0, estI: 0, docA: 0, docI: 0, admA: 0, admI: 0, obrA: 0, obrI: 0, cocA: 0, cocI: 0
+        };
+      }
+
+      munSemanaMap[key].dias.add(r.fecha);
+      const instKey = r.institucion_id || r.nombre_institucion?.trim().toUpperCase();
+      if (instKey) munSemanaMap[key].instituciones.add(instKey);
+
+      munSemanaMap[key].estA += r.matricula_asistente || 0;
+      munSemanaMap[key].estI += r.matricula_inasistente || 0;
+      munSemanaMap[key].docA += r.docentes_asistente || 0;
+      munSemanaMap[key].docI += r.docentes_inasistente || 0;
+      munSemanaMap[key].admA += r.admin_asistente || 0;
+      munSemanaMap[key].admI += r.admin_inasistente || 0;
+      munSemanaMap[key].obrA += r.obrero_asistente || 0;
+      munSemanaMap[key].obrI += r.obrero_inasistente || 0;
+      munSemanaMap[key].cocA += r.cocina_asistente || 0;
+      munSemanaMap[key].cocI += r.cocina_inasistente || 0;
+    });
+  });
+
+  const listado = Object.values(munSemanaMap).sort((a, b) => {
+    if (a.municipio !== b.municipio) return a.municipio.localeCompare(b.municipio);
+    return a.clave.localeCompare(b.clave);
+  });
+
+  listado.forEach(item => {
+    const estTotal = item.estA + item.estI;
+    const estPct = estTotal > 0 ? `${((item.estA / estTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const pAsist = item.docA + item.admA + item.obrA + item.cocA;
+    const pInasist = item.docI + item.admI + item.obrI + item.cocI;
+    const pTotal = pAsist + pInasist;
+    const pPct = pTotal > 0 ? `${((pAsist / pTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const gTotal = estTotal + pTotal;
+    const gAsist = item.estA + pAsist;
+    const gPct = gTotal > 0 ? `${((gAsist / gTotal) * 100).toFixed(1)}%` : '0.0%';
+
+    const row = ws.addRow({
+      municipio: item.municipio,
+      semana: item.semana,
+      dias_count: item.dias.size,
+      inst_count: item.instituciones.size,
+      est_asist: item.estA,
+      est_inasist: item.estI,
+      est_total: estTotal,
+      est_pct: estPct,
+      pers_asist: pAsist,
+      pers_inasist: pInasist,
+      pers_total: pTotal,
+      pers_pct: pPct,
+      global_pct: gPct
+    });
+
+    row.height = 20;
+    row.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
+  });
+
+  ws.autoFilter = { from: 'A1', to: 'M1' };
+};
+
+// 8. Hoja de Instituciones Sin Reportar
+const agregarHojaNoReportadas = (wb, noReportadas, nombreHoja = 'INSTITUCIONES SIN REPORTAR') => {
+  const ws = wb.addWorksheet(nombreHoja.substring(0, 31));
   ws.columns = [
     { header: 'Municipio', key: 'municipio', width: 22 },
     { header: 'Nombre de la Institución', key: 'nombre', width: 45 },
@@ -776,7 +1066,7 @@ const agregarHojaNoReportadas = (wb, noReportadas) => {
     { header: 'Estado', key: 'estado', width: 25 }
   ];
 
-  estilizarEncabezado(ws, 'FFB91C1C'); // Rojo institucional
+  estilizarEncabezado(ws, 'FFB91C1C');
 
   noReportadas.forEach(inst => {
     const row = ws.addRow({
@@ -801,7 +1091,7 @@ const agregarHojaNoReportadas = (wb, noReportadas) => {
     row.getCell('estado').fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFFEE2E2' } // Rojo tenue
+      fgColor: { argb: 'FFFEE2E2' }
     };
     row.getCell('estado').font = {
       color: { argb: 'FF991B1B' },
@@ -811,6 +1101,208 @@ const agregarHojaNoReportadas = (wb, noReportadas) => {
   });
 
   ws.autoFilter = { from: 'A1', to: 'G1' };
+};
+
+// 9. NUEVO: Hoja Integral de un Municipio (Resumen Ejecutivo + Turnos + Diario + Semanal + Pendientes + Detalle)
+const generarHojaCompletaMunicipio = (wb, mun, reportesMun, institucionesMun, noReportadasMun) => {
+  const ws = wb.addWorksheet(mun.substring(0, 31));
+
+  // Configuración de anchos iniciales
+  ws.columns = [
+    { key: 'c1', width: 22 },
+    { key: 'c2', width: 22 },
+    { key: 'c3', width: 20 },
+    { key: 'c4', width: 36 },
+    { key: 'c5', width: 16 },
+    { key: 'c6', width: 14 },
+    { key: 'c7', width: 14 },
+    { key: 'c8', width: 14 },
+    { key: 'c9', width: 14 },
+    { key: 'c10', width: 14 },
+    { key: 'c11', width: 14 },
+    { key: 'c12', width: 14 },
+    { key: 'c13', width: 14 },
+    { key: 'c14', width: 16 },
+    { key: 'c15', width: 35 }
+  ];
+
+  // 1. Banner Principal del Municipio
+  const rowT1 = ws.addRow(['CDCE ESTADAL GUÁRICO - SALA SITUACIONAL']);
+  rowT1.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+  rowT1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+  rowT1.alignment = { horizontal: 'left', vertical: 'middle' };
+  rowT1.height = 26;
+
+  const rowT2 = ws.addRow([`INFORME INTEGRAL DE ASISTENCIA - MUNICIPIO: ${mun}`]);
+  rowT2.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+  rowT2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+  rowT2.alignment = { horizontal: 'left', vertical: 'middle' };
+  rowT2.height = 22;
+
+  ws.addRow([]); // Espaciador
+
+  // 2. Indicadores Clave del Municipio
+  const catTotal = institucionesMun.length;
+  const repIds = new Set(reportesMun.map(r => r.institucion_id || r.nombre_institucion?.trim().toUpperCase()).filter(Boolean));
+  const repCount = repIds.size;
+  const noRepCount = noReportadasMun.length;
+  const pctCob = catTotal > 0 ? `${((repCount / catTotal) * 100).toFixed(1)}%` : '--';
+
+  let estA = 0, estI = 0, docA = 0, docI = 0, admA = 0, admI = 0, obrA = 0, obrI = 0, cocA = 0, cocI = 0;
+  reportesMun.forEach(r => {
+    estA += r.matricula_asistente || 0;
+    estI += r.matricula_inasistente || 0;
+    docA += r.docentes_asistente || 0;
+    docI += r.docentes_inasistente || 0;
+    admA += r.admin_asistente || 0;
+    admI += r.admin_inasistente || 0;
+    obrA += r.obrero_asistente || 0;
+    obrI += r.obrero_inasistente || 0;
+    cocA += r.cocina_asistente || 0;
+    cocI += r.cocina_inasistente || 0;
+  });
+
+  const totalEst = estA + estI;
+  const pctEst = totalEst > 0 ? `${((estA / totalEst) * 100).toFixed(1)}%` : '0.0%';
+  const persA = docA + admA + obrA + cocA;
+  const persI = docI + admI + obrI + cocI;
+  const persTot = persA + persI;
+  const pctPers = persTot > 0 ? `${((persA / persTot) * 100).toFixed(1)}%` : '0.0%';
+
+  const rowKpiHeader = ws.addRow(['INDICADOR GENERAL', 'VALOR REGISTRADO', 'DETALLE ADICIONAL']);
+  estilizarEncabezado(ws, 'FF334155', ws.rowCount);
+
+  const kpis = [
+    ['Instituciones en Catálogo Oficial', catTotal, 'Total registradas en el sistema'],
+    ['Instituciones que Reportaron', repCount, `Cobertura institucional: ${pctCob}`],
+    ['Instituciones Faltantes (Sin Reportar)', noRepCount, 'Planteles pendientes por consignar'],
+    ['Total Reportes Generados', reportesMun.length, 'Formularios recibidos'],
+    ['Estudiantes Asistentes', estA.toLocaleString('es-VE'), `Asistencia: ${pctEst} (Inasistentes: ${estI.toLocaleString('es-VE')})`],
+    ['Total Personal Asistente', persA.toLocaleString('es-VE'), `Asistencia: ${pctPers} (Doc, Adm, Obr, Coc)`]
+  ];
+
+  kpis.forEach(k => {
+    const r = ws.addRow(k);
+    r.height = 19;
+    r.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
+    r.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(2).font = { bold: true, color: { argb: 'FF1D4ED8' } };
+    r.getCell(3).font = { italic: true, color: { argb: 'FF64748B' } };
+  });
+
+  ws.addRow([]); // Espaciador
+
+  // 3. Resumen por Turno en el Municipio
+  const rowTurnoHeader = ws.addRow([`--- RESUMEN POR TURNO EN ${mun} ---`]);
+  rowTurnoHeader.font = { bold: true, size: 10, color: { argb: 'FF4338CA' } };
+
+  const thRow = ws.addRow(['Turno', 'Reportes', 'Est. Asist.', 'Est. Inasist.', 'Total Est.', '% Asist. Est.', 'Pers. Asist.', 'Pers. Inasist.', '% Asist. Pers.']);
+  estilizarEncabezado(ws, 'FF4F46E5', ws.rowCount);
+
+  ['MAÑANA', 'TARDE'].forEach(t => {
+    const repsTurno = reportesMun.filter(r => r.turno === t);
+    let tEstA = 0, tEstI = 0, tDocA = 0, tDocI = 0, tAdmA = 0, tAdmI = 0, tObrA = 0, tObrI = 0, tCocA = 0, tCocI = 0;
+    repsTurno.forEach(r => {
+      tEstA += r.matricula_asistente || 0;
+      tEstI += r.matricula_inasistente || 0;
+      tDocA += r.docentes_asistente || 0;
+      tDocI += r.docentes_inasistente || 0;
+      tAdmA += r.admin_asistente || 0;
+      tAdmI += r.admin_inasistente || 0;
+      tObrA += r.obrero_asistente || 0;
+      tObrI += r.obrero_inasistente || 0;
+      tCocA += r.cocina_asistente || 0;
+      tCocI += r.cocina_inasistente || 0;
+    });
+
+    const totE = tEstA + tEstI;
+    const pctE = totE > 0 ? `${((tEstA / totE) * 100).toFixed(1)}%` : '0.0%';
+    const tPersA = tDocA + tAdmA + tObrA + tCocA;
+    const tPersI = tDocI + tAdmI + tObrI + tCocI;
+    const totP = tPersA + tPersI;
+    const pctP = totP > 0 ? `${((tPersA / totP) * 100).toFixed(1)}%` : '0.0%';
+
+    const r = ws.addRow([t, repsTurno.length, tEstA, tEstI, totE, pctE, tPersA, tPersI, pctP]);
+    r.height = 19;
+    r.eachCell(c => { c.alignment = { horizontal: 'center', vertical: 'middle' }; });
+  });
+
+  ws.addRow([]); // Espaciador
+
+  // 4. Planteles Pendientes por Reportar en este Municipio
+  if (noReportadasMun.length > 0) {
+    const rowNoRepHeader = ws.addRow([`--- INSTITUCIONES QUE NO HAN REPORTADO EN ${mun} (${noReportadasMun.length}) ---`]);
+    rowNoRepHeader.font = { bold: true, size: 10, color: { argb: 'FFB91C1C' } };
+
+    const nrhRow = ws.addRow(['Nombre de la Institución', 'Código DEA', 'Turno Oficial', 'Matrícula Esperada', 'Docentes Esperados', 'Estado']);
+    estilizarEncabezado(ws, 'FFB91C1C', ws.rowCount);
+
+    noReportadasMun.forEach(inst => {
+      const r = ws.addRow([
+        inst.nombre,
+        inst.codigo || 'S/C',
+        inst.turno || 'AMBOS',
+        inst.max_matricula || 0,
+        inst.max_docentes || 0,
+        '⚠️ PENDIENTE POR REPORTAR'
+      ]);
+      r.height = 19;
+      r.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+      r.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+      r.getCell(6).font = { color: { argb: 'FF991B1B' }, bold: true };
+    });
+
+    ws.addRow([]); // Espaciador
+  }
+
+  // 5. Registros Detallados de Asistencia
+  const rowDetalleHeader = ws.addRow([`--- REGISTROS DETALLADOS DE ASISTENCIA EN ${mun} (${reportesMun.length}) ---`]);
+  rowDetalleHeader.font = { bold: true, size: 10, color: { argb: 'FF1D4ED8' } };
+
+  const rdRow = ws.addRow([
+    'Turno', 'Fecha', 'Institución', 'Manual', 'Director(a)', 'Cédula', 'Teléfono',
+    'Est. Asist.', 'Est. Inasist.', '% Asistencia', 'Doc. Asist.', 'Adm. Asist.', 'Obr. Asist.', 'Coc. Asist.', 'Hora / Incidencias'
+  ]);
+  estilizarEncabezado(ws, 'FF1E3A8A', ws.rowCount);
+
+  reportesMun.forEach(rep => {
+    const tEst = (rep.matricula_asistente || 0) + (rep.matricula_inasistente || 0);
+    const pEst = tEst > 0 ? `${(((rep.matricula_asistente || 0) / tEst) * 100).toFixed(1)}%` : '0.0%';
+
+    const r = ws.addRow([
+      rep.turno,
+      rep.fecha,
+      rep.nombre_institucion,
+      rep.es_institucion_manual ? 'SÍ' : 'NO',
+      rep.nombre_director,
+      rep.cedula,
+      rep.telefono,
+      rep.matricula_asistente || 0,
+      rep.matricula_inasistente || 0,
+      pEst,
+      rep.docentes_asistente || 0,
+      rep.admin_asistente || 0,
+      rep.obrero_asistente || 0,
+      rep.cocina_asistente || 0,
+      rep.incidencias || '--'
+    ]);
+
+    r.height = 20;
+    r.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(11).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(12).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(13).alignment = { horizontal: 'center', vertical: 'middle' };
+    r.getCell(14).alignment = { horizontal: 'center', vertical: 'middle' };
+  });
 };
 
 exports.exportExcel = async (req, res) => {
@@ -830,8 +1322,9 @@ exports.exportExcel = async (req, res) => {
       where.turno = turno;
     }
 
-    if (municipio) {
-      where.municipio = { [Op.contains]: [municipio.toUpperCase().trim()] };
+    const munNormalizado = municipio ? municipio.toUpperCase().trim() : null;
+    if (munNormalizado) {
+      where.municipio = { [Op.contains]: [munNormalizado] };
     }
 
     const [reportes, todasInstituciones] = await Promise.all([
@@ -845,12 +1338,12 @@ exports.exportExcel = async (req, res) => {
       })
     ]);
 
-    // Calcular instituciones que NO han reportado en el período
+    // Calcular planteles que NO han reportado en el período
     const reportedIds = new Set(reportes.map(r => r.institucion_id).filter(Boolean));
     const reportedNames = new Set(reportes.map(r => r.nombre_institucion ? r.nombre_institucion.trim().toUpperCase() : '').filter(Boolean));
 
     const noReportadas = todasInstituciones.filter(inst => {
-      if (municipio && inst.municipio !== municipio.toUpperCase().trim()) return false;
+      if (munNormalizado && inst.municipio !== munNormalizado) return false;
       if (turno && ['MAÑANA', 'TARDE'].includes(turno) && !['AMBOS', turno].includes(inst.turno)) return false;
       if (inst.id && reportedIds.has(inst.id)) return false;
       if (inst.nombre && reportedNames.has(inst.nombre.trim().toUpperCase())) return false;
@@ -859,38 +1352,85 @@ exports.exportExcel = async (req, res) => {
 
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Sala Situacional CDCE ESTADAL GUÁRICO';
-    wb.title = 'Reporte y Resumen de Asistencia - CDCE ESTADAL GUÁRICO';
     wb.created = new Date();
 
-    // 1. Resumen Diario
-    agregarHojaResumenDiario(wb, reportes);
+    // =========================================================================
+    // CASO A: Exportación filtrada para UN MUNICIPIO ESPECÍFICO
+    // =========================================================================
+    if (munNormalizado) {
+      wb.title = `Informe y Resumen de Asistencia - Municipio ${munNormalizado} - CDCE GUÁRICO`;
 
-    // 2. Resumen por Turno
-    agregarHojaResumenTurno(wb, reportes);
+      // 1. Resumen Diario del Municipio
+      agregarHojaResumenDiario(wb, reportes, `DIARIO - ${munNormalizado}`);
 
-    // 3. Resumen Semanal
-    agregarHojaResumenSemanal(wb, reportes);
+      // 2. Resumen por Turno del Municipio
+      agregarHojaResumenTurno(wb, reportes, `TURNO - ${munNormalizado}`);
 
-    // 4. Resumen por Municipio
+      // 3. Resumen Semanal del Municipio
+      agregarHojaResumenSemanal(wb, reportes, `SEMANAL - ${munNormalizado}`);
+
+      // 4. Planteles que NO han reportado en este Municipio
+      agregarHojaNoReportadas(wb, noReportadas, `SIN REPORTAR - ${munNormalizado}`);
+
+      // 5. Registros Detallados del Municipio
+      const wsDetalleMun = wb.addWorksheet(`DETALLE - ${munNormalizado}`.substring(0, 31));
+      aplicarEstilosHojaDetalle(wsDetalleMun, reportes);
+
+      const filename = `Reporte_Resumen_${munNormalizado}_${desde || 'inicio'}_al_${hasta || 'cierre'}.xlsx`;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      await wb.xlsx.write(res);
+      return res.end();
+    }
+
+    // =========================================================================
+    // CASO B: Exportación ESTADAL COMPLETA (Con desglose por Municipio)
+    // =========================================================================
+    wb.title = 'Informe Integral y Resumen de Asistencia Escolar - CDCE ESTADAL GUÁRICO';
+
+    // 1. Resumen Diario Estadal
+    agregarHojaResumenDiario(wb, reportes, 'RESUMEN DIARIO ESTADAL');
+
+    // 2. Resumen por Turno Estadal
+    agregarHojaResumenTurno(wb, reportes, 'RESUMEN TURNO ESTADAL');
+
+    // 3. Resumen Semanal Estadal
+    agregarHojaResumenSemanal(wb, reportes, 'RESUMEN SEMANAL ESTADAL');
+
+    // 4. Resumen por Municipio (15 municipios consolidado)
     agregarHojaResumenMunicipio(wb, reportes, todasInstituciones);
 
-    // 5. Instituciones Sin Reportar
-    agregarHojaNoReportadas(wb, noReportadas);
+    // 5. NUEVO: Resumen Diario Desglosado por Municipio (Municipio x Día)
+    agregarHojaDiarioPorMunicipio(wb, reportes);
 
-    // 6. Hoja Consolidada General Detallada
+    // 6. NUEVO: Resumen por Turno Desglosado por Municipio (Municipio x Turno)
+    agregarHojaTurnoPorMunicipio(wb, reportes);
+
+    // 7. NUEVO: Resumen Semanal Desglosado por Municipio (Municipio x Semana)
+    agregarHojaSemanalPorMunicipio(wb, reportes);
+
+    // 8. Planteles que NO han reportado a nivel Estadal
+    agregarHojaNoReportadas(wb, noReportadas, 'INSTITUCIONES SIN REPORTAR');
+
+    // 9. Consolidado Detallado General de todos los reportes
     const wsGeneral = wb.addWorksheet('CONSOLIDADO GENERAL');
     aplicarEstilosHojaDetalle(wsGeneral, reportes);
 
-    // 7. Hojas individuales por cada Municipio que tenga registros
+    // 10. Hojas Integrales para CADA UNO de los 15 MUNICIPIOS
     MUNICIPIOS.forEach(mun => {
-      const filtrados = reportes.filter(r => Array.isArray(r.municipio) && r.municipio.includes(mun));
-      if (filtrados.length > 0) {
-        const wsMun = wb.addWorksheet(mun.substring(0, 30));
-        aplicarEstilosHojaDetalle(wsMun, filtrados);
+      const repMun = reportes.filter(r => Array.isArray(r.municipio) ? r.municipio.includes(mun) : r.municipio === mun);
+      const instMun = todasInstituciones.filter(i => i.municipio === mun);
+      const noRepMun = noReportadas.filter(i => i.municipio === mun);
+
+      // Si el municipio tiene reportes o instituciones en catálogo, generamos su hoja integral
+      if (repMun.length > 0 || instMun.length > 0) {
+        generarHojaCompletaMunicipio(wb, mun, repMun, instMun, noRepMun);
       }
     });
 
-    // 8. Hoja para Instituciones Manuales
+    // 11. Hoja separada para Instituciones Manuales (si existen)
     const manuales = reportes.filter(r => r.es_institucion_manual);
     if (manuales.length > 0) {
       const wsManual = wb.addWorksheet('INSTITUCIONES MANUALES');

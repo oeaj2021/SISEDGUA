@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import { exportExcel } from '../services/api';
 
-export default function ExportButton({ filtros }) {
+export default function ExportButton({ filtros = {}, municipio, textoPersonalizado, className }) {
   const [descargando, setDescargando] = useState(false);
+
+  const munActivo = municipio || filtros?.municipio || '';
 
   const handleDescargar = async () => {
     try {
       setDescargando(true);
-      const res = await exportExcel(filtros);
+      const params = {
+        ...filtros,
+        ...(munActivo ? { municipio: munActivo } : {})
+      };
+
+      const res = await exportExcel(params);
 
       const blob = new Blob([res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -16,7 +23,9 @@ export default function ExportButton({ filtros }) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const nombreArchivo = `SISEDGUA_Reporte_${filtros.desde || 'consolidado'}_al_${filtros.hasta || 'cierre'}.xlsx`;
+      const nombreArchivo = munActivo
+        ? `SISEDGUA_Resumen_${munActivo}_${filtros?.desde || 'inicio'}_al_${filtros?.hasta || 'cierre'}.xlsx`
+        : `SISEDGUA_Resumen_Estadal_${filtros?.desde || 'inicio'}_al_${filtros?.hasta || 'cierre'}.xlsx`;
       link.setAttribute('download', nombreArchivo);
       document.body.appendChild(link);
       link.click();
@@ -30,12 +39,17 @@ export default function ExportButton({ filtros }) {
     }
   };
 
+  const textoBoton = textoPersonalizado || (
+    munActivo ? `Excel de ${munActivo}` : 'Descargar Excel Completo'
+  );
+
   return (
     <button
       type="button"
       onClick={handleDescargar}
       disabled={descargando}
-      className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+      className={className || "bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 whitespace-nowrap"}
+      title={munActivo ? `Exportar informe y resúmenes de ${munActivo}` : "Exportar consolidado estadal y resúmenes de todos los municipios"}
     >
       {descargando ? (
         <>
@@ -45,7 +59,7 @@ export default function ExportButton({ filtros }) {
       ) : (
         <>
           <span>📥</span>
-          <span>Descargar Excel Ordenado</span>
+          <span>{textoBoton}</span>
         </>
       )}
     </button>

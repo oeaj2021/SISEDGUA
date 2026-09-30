@@ -519,16 +519,26 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Acceso rápido a planteles sin reportar */}
-                  {noReportadasInfo && noReportadasInfo.total_no_reportadas > 0 && (
-                    <button
-                      onClick={() => setPestanaActiva('no_reportadas')}
-                      className="w-full sm:w-auto bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold py-2 px-3.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
-                    >
-                      <span>⚠️</span>
-                      <span>Ver {noReportadasInfo.total_no_reportadas} planteles sin reportar</span>
-                    </button>
-                  )}
+                  {/* Acceso rápido a exportar municipio y planteles sin reportar */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {filtros.municipio && (
+                      <ExportButton
+                        filtros={filtros}
+                        municipio={filtros.municipio}
+                        textoPersonalizado={`Excel de ${filtros.municipio}`}
+                        className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      />
+                    )}
+                    {noReportadasInfo && noReportadasInfo.total_no_reportadas > 0 && (
+                      <button
+                        onClick={() => setPestanaActiva('no_reportadas')}
+                        className="w-full sm:w-auto bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold py-2 px-3.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      >
+                        <span>⚠️</span>
+                        <span>Ver {noReportadasInfo.total_no_reportadas} planteles sin reportar</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Filtro Rápido por Municipio para ver cómo van */}
