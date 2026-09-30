@@ -1,4 +1,4 @@
-const { Reporte, Institucion } = require('../models');
+const { Reporte, Institucion, sequelize } = require('../models');
 const { getJson, setJson, delByPattern } = require('../config/redis');
 
 const MUNICIPIOS_VALIDOS = [
@@ -138,6 +138,26 @@ exports.getConteoHoy = async (req, res) => {
     let cached = await getJson(cacheKey);
 
     if (!cached) {
+      // Contar instituciones activas registradas por cada municipio
+      let mapaTotalInst = {};
+      try {
+        const instPorMun = await Institucion.findAll({
+          attributes: [
+            'municipio',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'total_planteles']
+          ],
+          where: { activo: true },
+          group: ['municipio'],
+          raw: true
+        });
+        instPorMun.forEach((ipm) => {
+          const munKey = (ipm.municipio || '').toUpperCase().trim();
+          mapaTotalInst[munKey] = parseInt(ipm.total_planteles, 10) || 0;
+        });
+      } catch (errInst) {
+        console.warn('Nota conteo instituciones en reporteController:', errInst.message);
+      }
+
       const reportesHoy = await Reporte.findAll({
         where: { fecha: fechaHoy },
         attributes: ['municipio', 'turno']
@@ -149,7 +169,8 @@ exports.getConteoHoy = async (req, res) => {
           municipio: m,
           total: 0,
           manana: 0,
-          tarde: 0
+          tarde: 0,
+          total_instituciones: mapaTotalInst[m] || 0
         };
       });
 

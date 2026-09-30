@@ -17,8 +17,8 @@ module.exports = (req, res, next) => {
   const horaDecimal = hora + min / 60;
 
   const HORARIOS = {
-    'MAÑANA': { inicio: 7, fin: 12 },
-    'TARDE':  { inicio: 13, fin: 22 }
+    'MAÑANA': { inicio: 7, fin: 11, inicioTexto: '07:00 AM', finTexto: '11:00 AM' },
+    'TARDE':  { inicio: 12, fin: 19, inicioTexto: '12:00 PM', finTexto: '07:00 PM' }
   };
 
   const rango = HORARIOS[turno];

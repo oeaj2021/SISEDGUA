@@ -96,16 +96,32 @@ const Reporte = sequelize.define('Reporte', {
   incidencias: {
     type: DataTypes.TEXT,
     allowNull: false
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    field: 'created_at'
+  },
+  updated_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    field: 'updated_at'
   }
 }, {
   tableName: 'reportes',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     { fields: ['fecha'] },
     { fields: ['turno'] },
     { fields: ['nombre_institucion'] },
     { fields: ['fecha', 'turno'] },
     { fields: ['fecha', 'turno', 'nombre_institucion'] },
-    { fields: ['fecha', 'institucion_id', 'turno'] }
+    { fields: ['fecha', 'institucion_id', 'turno'] },
+    { fields: ['created_at'] }
   ]
 });
 

@@ -62,6 +62,7 @@ sisedgua_pgdata/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+.kilo/
 .DS_Store
 Thumbs.db
 *.suo

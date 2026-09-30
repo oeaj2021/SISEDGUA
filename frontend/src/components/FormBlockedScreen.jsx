@@ -46,8 +46,8 @@ export default function FormBlockedScreen({ turno, horaApertura, horaCierre }) {
   }, [horaApertura]);
 
   const esManana = turno === 'MAÑANA';
-  const aperturaTexto = esManana ? '07:00 AM' : '01:00 PM';
-  const cierreTexto = esManana ? '12:00 PM' : '10:00 PM';
+  const aperturaTexto = horaApertura !== undefined ? (horaApertura < 12 ? `${horaApertura}:00 AM` : `${horaApertura === 12 ? 12 : horaApertura - 12}:00 PM`) : (esManana ? '07:00 AM' : '12:00 PM');
+  const cierreTexto = horaCierre !== undefined ? (horaCierre < 12 ? `${horaCierre}:00 AM` : `${horaCierre === 12 ? 12 : horaCierre - 12}:00 PM`) : (esManana ? '11:00 AM' : '07:00 PM');
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">

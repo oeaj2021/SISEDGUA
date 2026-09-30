@@ -258,7 +258,7 @@ export default function ConteoMunicipiosBar() {
                             : 'bg-slate-800 text-slate-300'
                         }`}
                       >
-                        {valorConteo}
+                        {item.total_instituciones ? `${valorConteo}/${item.total_instituciones}` : valorConteo}
                       </span>
                       {turnoSeleccionado === 'TODOS' && tieneReportes && (
                         <span className="text-[9px] text-blue-200 font-mono tracking-tighter">

@@ -18,6 +18,8 @@ const consejosComunalesRoutes = require('./routes/consejosComunales');
 const padronRoutes = require('./routes/padron');
 
 const sqlInjectionGuard = require('./middlewares/sqlInjectionGuard');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 const app = express();
 
@@ -127,6 +129,19 @@ const consultaLimiter = rateLimit({
 
 // Aplicar rate limiter general a todas las llamadas API
 app.use('/api/', generalLimiter);
+
+// 📚 Documentación Interactiva de la API con Swagger UI
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'SISEDGUA API Docs',
+  customfavIcon: '/favicon.ico'
+}));
+
+// Endpoint para obtener el spec JSON/YAML de OpenAPI
+app.get('/api/docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Rutas Públicas (Con limitadores específicos contra fuerza bruta y scraping)
 app.use('/api/auth/login', authLimiter);

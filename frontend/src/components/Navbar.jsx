@@ -6,6 +6,7 @@ import {
   getHoraVenezuelaFormateada
 } from '../utils/horario';
 import ConteoMunicipiosBar from './ConteoMunicipiosBar';
+import ConteoComunidadesBar from './ConteoComunidadesBar';
 
 export default function Navbar() {
   const { isAuthenticated, admin, logout } = useAuth();
@@ -42,10 +43,12 @@ export default function Navbar() {
         : 'text-blue-100 hover:bg-blue-800 hover:text-white'
     }`;
 
-  // NAVBAR EXCLUSIVO PARA CONSEJOS COMUNALES (Sin cintillo ni turnos de asistencia escolar)
+  // NAVBAR EXCLUSIVO PARA CONSEJOS COMUNALES
   if (esRutaComunales) {
     return (
       <header className="sticky top-0 z-50 shadow-md">
+        {/* Cintillo Informativo de Registros Comunales por Municipio */}
+        <ConteoComunidadesBar />
         <nav className="bg-blue-900 border-b border-blue-950 px-4 py-3 text-white">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             {/* Logo / Título Consejos Comunales */}
@@ -380,7 +383,7 @@ export default function Navbar() {
                   ACTIVO
                 </span>
               ) : (
-                <span className="text-[10px] text-blue-200 font-mono">07:00-12:00</span>
+                <span className="text-[10px] text-blue-200 font-mono">07:00-11:00</span>
               )}
             </NavLink>
 
@@ -396,7 +399,7 @@ export default function Navbar() {
                   ACTIVO
                 </span>
               ) : (
-                <span className="text-[10px] text-blue-200 font-mono">13:00-22:00</span>
+                <span className="text-[10px] text-blue-200 font-mono">12:00-19:00</span>
               )}
             </NavLink>
 

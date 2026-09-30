@@ -27,7 +27,7 @@ export default function StatsCard({ label, value, subtext, icon, color = 'blue' 
           </span>
         )}
       </div>
-      <div className="text-3xl font-bold tracking-tight text-slate-900">{value}</div>
+      <div className={`${typeof value === 'string' && value.length > 8 ? 'text-lg sm:text-xl font-black leading-tight' : 'text-3xl font-bold'} tracking-tight text-slate-900`}>{value}</div>
       <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mt-1.5">{label}</div>
     </div>
   );

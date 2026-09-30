@@ -1,26 +1,26 @@
 /**
  * Utilidades de control de horario legal para la República Bolivariana de Venezuela (UTC-4 / America/Caracas).
  * Reglas oficiales:
- * - Turno MAÑANA: 07:00 a 12:00
- * - Turno TARDE:  13:00 a 22:00
+ * - Turno MAÑANA: 07:00 a 11:00
+ * - Turno TARDE:  12:00 a 19:00
  */
 
 export const HORARIOS = {
   MAÑANA: {
     inicio: 7,
-    fin: 12,
+    fin: 11,
     path: '/manana',
     nombre: 'Mañana',
     aperturaTexto: '07:00 AM',
-    cierreTexto: '12:00 PM'
+    cierreTexto: '11:00 AM'
   },
   TARDE: {
-    inicio: 13,
-    fin: 22,
+    inicio: 12,
+    fin: 19,
     path: '/tarde',
     nombre: 'Tarde',
-    aperturaTexto: '01:00 PM',
-    cierreTexto: '10:00 PM'
+    aperturaTexto: '12:00 PM',
+    cierreTexto: '07:00 PM'
   }
 };
 
@@ -74,8 +74,8 @@ export function getTurnoActivo() {
  * Retorna la ruta a la que debe redirigirse un visitante:
  * - Si Turno MAÑANA está habilitado -> '/manana'
  * - Si Turno TARDE está habilitado -> '/tarde'
- * - Si está en receso intermedio (12:00 a 13:00) -> '/tarde' (próximo turno a habilitarse)
- * - Si es de noche o madrugada (22:00 a 07:00) -> '/manana' (próximo turno a habilitarse al amanecer)
+ * - Si está en receso intermedio (11:00 a 12:00) -> '/tarde' (próximo turno a habilitarse)
+ * - Si es de noche o madrugada (19:00 a 07:00) -> '/manana' (próximo turno a habilitarse al amanecer)
  */
 export function getRutaSegunHorario() {
   const activo = getTurnoActivo();
@@ -83,7 +83,7 @@ export function getRutaSegunHorario() {
   if (activo === 'TARDE') return '/tarde';
 
   const hora = getHoraVenezuelaDecimal();
-  if (hora >= 12 && hora < 13) {
+  if (hora >= 11 && hora < 12) {
     return '/tarde';
   }
   return '/manana';

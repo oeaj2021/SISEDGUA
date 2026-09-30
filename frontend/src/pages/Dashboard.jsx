@@ -219,8 +219,13 @@ export default function Dashboard() {
                 <StatsCard
                   icon="📋"
                   label="Instituciones Reportadas"
-                  value={stats.total_reportes || 0}
-                  subtext="Muestra Activa"
+                  value={
+                    stats.reportadas_display ||
+                    (stats.total_instituciones
+                      ? `${stats.cant_instituciones_reportadas || stats.total_reportes || 0} de ${stats.total_instituciones} instituciones`
+                      : `${stats.total_reportes || 0} de 100 instituciones`)
+                  }
+                  subtext={filtros.municipio ? `En ${filtros.municipio}` : "Por municipio"}
                   color="blue"
                 />
                 <StatsCard

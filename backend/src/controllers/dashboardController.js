@@ -1,4 +1,4 @@
-const { Reporte } = require('../models');
+const { Reporte, Institucion, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const { getJson, setJson } = require('../config/redis');
 
@@ -31,6 +31,26 @@ exports.getStats = async (req, res) => {
     }
 
     const reportes = await Reporte.findAll({ where });
+
+    // Total de instituciones en el catálogo (estatal o municipal)
+    let whereInst = { activo: true };
+    if (municipio) {
+      whereInst.municipio = { [Op.iLike]: `%${municipio.toUpperCase().trim()}%` };
+    }
+    const total_instituciones_count = await Institucion.count({ where: whereInst });
+    const total_instituciones = total_instituciones_count > 0 ? total_instituciones_count : 100;
+
+    // Conteo de instituciones únicas reportadas
+    const setReportadas = new Set();
+    reportes.forEach(r => {
+      if (r.institucion_id) {
+        setReportadas.add(`id_${r.institucion_id}`);
+      } else if (r.nombre_institucion) {
+        setReportadas.add(`nom_${r.nombre_institucion.trim().toUpperCase()}`);
+      }
+    });
+    const cant_instituciones_reportadas = setReportadas.size || reportes.length;
+    const reportadas_display = `${cant_instituciones_reportadas} de ${total_instituciones} instituciones`;
 
     const total_reportes = reportes.length;
     const estudiantes_asistente = reportes.reduce((acc, r) => acc + (r.matricula_asistente || 0), 0);
@@ -80,6 +100,9 @@ exports.getStats = async (req, res) => {
 
     const result = {
       total_reportes,
+      cant_instituciones_reportadas,
+      total_instituciones,
+      reportadas_display,
       estudiantes_asistente,
       estudiantes_inasistente,
       pct_asistencia,
@@ -172,6 +195,33 @@ exports.getPorMunicipio = async (req, res) => {
         });
       }
     });
+
+    // Mapear total de instituciones activas registradas por municipio
+    try {
+      const totalInstPorMun = await Institucion.findAll({
+        attributes: [
+          'municipio',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'total_planteles']
+        ],
+        where: { activo: true },
+        group: ['municipio'],
+        raw: true
+      });
+
+      const mapaPlanteles = {};
+      totalInstPorMun.forEach((item) => {
+        const k = (item.municipio || '').toUpperCase().trim();
+        mapaPlanteles[k] = parseInt(item.total_planteles, 10) || 0;
+      });
+
+      Object.keys(acumulado).forEach((mun) => {
+        const totPlanteles = mapaPlanteles[mun] || 100;
+        acumulado[mun].total_instituciones = totPlanteles;
+        acumulado[mun].instituciones_display = `${acumulado[mun].reportes} de ${totPlanteles} instituciones`;
+      });
+    } catch (errInst) {
+      console.warn('Nota instituciones en getPorMunicipio:', errInst.message);
+    }
 
     const result = Object.values(acumulado);
     setJson(cacheKey, result, 60).catch(err => console.error('Error guardando cache dashboard:mun:', err.message));
