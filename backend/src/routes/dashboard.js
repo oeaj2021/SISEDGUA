@@ -323,5 +323,6 @@ router.get('/stats', ctrl.getStats);
 router.get('/por-municipio', ctrl.getPorMunicipio);
 router.get('/tendencia', ctrl.getTendencia);
 router.get('/reportes', ctrl.getReportes);
+router.get('/no-reportadas', ctrl.getNoReportadas);
 
 module.exports = router;

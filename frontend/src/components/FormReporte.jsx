@@ -51,17 +51,13 @@ export default function FormReporte({ turno }) {
     return <FormBlockedScreen turno={turno} horaApertura={h.inicio} horaCierre={h.fin} />;
   }
 
-  const handleMunicipioToggle = (mun) => {
-    setForm((prev) => {
-      const existe = prev.municipio.includes(mun);
-      const nuevo = existe ? prev.municipio.filter((m) => m !== mun) : [...prev.municipio, mun];
-      return {
-        ...prev,
-        municipio: nuevo,
-        nombre_institucion: '',
-        institucion_id: null
-      };
-    });
+  const handleMunicipioSelect = (mun) => {
+    setForm((prev) => ({
+      ...prev,
+      municipio: [mun],
+      nombre_institucion: '',
+      institucion_id: null
+    }));
   };
 
   const handleInstitucionChange = (nombre, id) => {
@@ -98,8 +94,8 @@ export default function FormReporte({ turno }) {
     e.preventDefault();
     setMensajeError('');
 
-    if (form.municipio.length === 0) {
-      setMensajeError('Debe seleccionar al menos un municipio.');
+    if (!form.municipio || form.municipio.length === 0) {
+      setMensajeError('Debe seleccionar el municipio de la institución.');
       return;
     }
 
@@ -196,24 +192,24 @@ export default function FormReporte({ turno }) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="text-blue-700">📍</span> MUNICIPIO(S) <span className="text-rose-500">*</span>
+                <span className="text-blue-700">📍</span> MUNICIPIO <span className="text-rose-500">*</span>
               </label>
-              <span className="text-[11px] text-slate-500 font-medium">
-                {form.municipio.length > 0 ? `${form.municipio.length} seleccionado(s)` : 'Seleccione al menos uno'}
+              <span className="text-[11px] text-blue-700 font-bold">
+                {form.municipio.length > 0 ? `Seleccionado: ${form.municipio[0]}` : 'Seleccione solo un municipio'}
               </span>
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
               {MUNICIPIOS.map((mun) => {
-                const activo = form.municipio.includes(mun);
+                const activo = form.municipio[0] === mun;
                 return (
                   <button
                     key={mun}
                     type="button"
-                    onClick={() => handleMunicipioToggle(mun)}
-                    className={`text-xs font-bold py-2 px-3 rounded-lg border text-center transition-colors cursor-pointer ${
+                    onClick={() => handleMunicipioSelect(mun)}
+                    className={`text-xs font-bold py-2 px-3 rounded-lg border text-center transition-all cursor-pointer ${
                       activo
-                        ? 'bg-blue-700 text-white border-blue-700 shadow-sm'
+                        ? 'bg-blue-700 text-white border-blue-700 shadow-sm ring-2 ring-blue-300'
                         : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-900'
                     }`}
                   >

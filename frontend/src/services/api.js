@@ -65,6 +65,7 @@ export const getStats = (params) => api.get('/dashboard/stats', { params });
 export const getPorMunicipio = (params) => api.get('/dashboard/por-municipio', { params });
 export const getTendencia = (params) => api.get('/dashboard/tendencia', { params });
 export const getReportes = (params) => api.get('/dashboard/reportes', { params });
+export const getNoReportadas = (params) => api.get('/dashboard/no-reportadas', { params });
 export const exportExcel = (params) => api.get('/export/excel', { params, responseType: 'blob' });
 
 // Consejos Comunales (Público y Auditoría Admin)

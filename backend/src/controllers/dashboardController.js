@@ -288,17 +288,33 @@ exports.getTendencia = async (req, res) => {
 
 exports.getReportes = async (req, res) => {
   try {
-    const { municipio, fecha, turno, page = 1, limit = 20 } = req.query;
+    const { municipio, fecha, desde, hasta, turno, search, page = 1, limit = 20 } = req.query;
     const where = {};
 
-    if (municipio) {
-      where.municipio = { [Op.contains]: [municipio.toUpperCase()] };
-    }
-    if (fecha) {
+    if (desde && hasta) {
+      where.fecha = { [Op.between]: [desde, hasta] };
+    } else if (desde) {
+      where.fecha = { [Op.gte]: desde };
+    } else if (hasta) {
+      where.fecha = { [Op.lte]: hasta };
+    } else if (fecha) {
       where.fecha = fecha;
+    }
+
+    if (municipio) {
+      where.municipio = { [Op.contains]: [municipio.toUpperCase().trim()] };
     }
     if (turno && ['MAÑANA', 'TARDE'].includes(turno)) {
       where.turno = turno;
+    }
+
+    if (search && search.trim()) {
+      const q = `%${search.trim()}%`;
+      where[Op.or] = [
+        { nombre_institucion: { [Op.iLike]: q } },
+        { nombre_director: { [Op.iLike]: q } },
+        { cedula: { [Op.iLike]: q } }
+      ];
     }
 
     const limitNum = parseInt(limit, 10) || 20;
@@ -309,7 +325,7 @@ exports.getReportes = async (req, res) => {
       where,
       limit: limitNum,
       offset,
-      order: [['created_at', 'DESC']]
+      order: [['fecha', 'DESC'], ['created_at', 'DESC']]
     });
 
     return res.json({
@@ -321,5 +337,90 @@ exports.getReportes = async (req, res) => {
   } catch (error) {
     console.error('Error en listado de reportes:', error);
     return res.status(500).json({ error: 'Error al consultar registros de reportes' });
+  }
+};
+
+exports.getNoReportadas = async (req, res) => {
+  try {
+    const { desde, hasta, fecha, turno, municipio } = req.query;
+
+    const fechaInicio = desde || fecha || new Date().toISOString().split('T')[0];
+    const fechaFin = hasta || fecha || new Date().toISOString().split('T')[0];
+
+    const instWhere = { activo: true };
+    if (municipio) {
+      instWhere.municipio = municipio.toUpperCase().trim();
+    }
+    if (turno && ['MAÑANA', 'TARDE'].includes(turno)) {
+      instWhere.turno = { [Op.in]: [turno, 'AMBOS'] };
+    }
+
+    const todasInstituciones = await Institucion.findAll({
+      where: instWhere,
+      order: [['municipio', 'ASC'], ['nombre', 'ASC']]
+    });
+
+    const repWhere = {
+      fecha: { [Op.between]: [fechaInicio, fechaFin] }
+    };
+    if (turno && ['MAÑANA', 'TARDE'].includes(turno)) {
+      repWhere.turno = turno;
+    }
+    if (municipio) {
+      repWhere.municipio = { [Op.contains]: [municipio.toUpperCase().trim()] };
+    }
+
+    const reportes = await Reporte.findAll({
+      where: repWhere,
+      attributes: ['institucion_id', 'nombre_institucion', 'municipio', 'turno', 'fecha']
+    });
+
+    const reportedIds = new Set(reportes.map(r => r.institucion_id).filter(Boolean));
+    const reportedNames = new Set(reportes.map(r => r.nombre_institucion ? r.nombre_institucion.trim().toUpperCase() : '').filter(Boolean));
+
+    const noReportadas = todasInstituciones.filter(inst => {
+      if (inst.id && reportedIds.has(inst.id)) return false;
+      if (inst.nombre && reportedNames.has(inst.nombre.trim().toUpperCase())) return false;
+      return true;
+    });
+
+    const porMunicipio = {};
+    todasInstituciones.forEach(inst => {
+      const m = inst.municipio;
+      if (!porMunicipio[m]) {
+        porMunicipio[m] = { municipio: m, total: 0, reportadas: 0, no_reportadas: 0 };
+      }
+      porMunicipio[m].total += 1;
+    });
+
+    noReportadas.forEach(inst => {
+      const m = inst.municipio;
+      if (porMunicipio[m]) {
+        porMunicipio[m].no_reportadas += 1;
+      }
+    });
+
+    Object.values(porMunicipio).forEach(item => {
+      item.reportadas = item.total - item.no_reportadas;
+      item.pct_reportadas = item.total > 0 ? ((item.reportadas / item.total) * 100).toFixed(1) : '0.0';
+    });
+
+    return res.json({
+      fechaInicio,
+      fechaFin,
+      turno: turno || 'TODOS',
+      municipio: municipio || 'TODOS',
+      total_catalogo: todasInstituciones.length,
+      total_reportadas: todasInstituciones.length - noReportadas.length,
+      total_no_reportadas: noReportadas.length,
+      porcentaje_no_reportadas: todasInstituciones.length > 0
+        ? ((noReportadas.length / todasInstituciones.length) * 100).toFixed(1)
+        : '0.0',
+      por_municipio: Object.values(porMunicipio).sort((a, b) => b.no_reportadas - a.no_reportadas),
+      data: noReportadas
+    });
+  } catch (error) {
+    console.error('Error al consultar instituciones no reportadas:', error);
+    return res.status(500).json({ error: 'Error al consultar instituciones no reportadas' });
   }
 };

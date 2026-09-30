@@ -35,15 +35,17 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'El turno debe ser MAÑANA o TARDE' });
     }
 
-    if (!Array.isArray(municipio) || municipio.length === 0) {
-      return res.status(400).json({ error: 'Debe seleccionar al menos un municipio válido' });
+    // Validar selección de un único municipio
+    const munRaw = Array.isArray(municipio) ? municipio[0] : municipio;
+    if (!munRaw || typeof munRaw !== 'string') {
+      return res.status(400).json({ error: 'Debe seleccionar un municipio válido' });
     }
 
-    const munsNormalizados = municipio.map(m => m.toUpperCase().trim());
-    const invalidos = munsNormalizados.filter(m => !MUNICIPIOS_VALIDOS.includes(m));
-    if (invalidos.length > 0) {
-      return res.status(400).json({ error: `Municipios no válidos: ${invalidos.join(', ')}` });
+    const munNormalizado = munRaw.toUpperCase().trim();
+    if (!MUNICIPIOS_VALIDOS.includes(munNormalizado)) {
+      return res.status(400).json({ error: `Municipio no válido: ${munNormalizado}` });
     }
+    const munsNormalizados = [munNormalizado];
 
     if (!fecha || !nombre_director || !cedula || !telefono || !nombre_institucion || !incidencias) {
       return res.status(400).json({ error: 'Todos los campos requeridos deben ser completados' });

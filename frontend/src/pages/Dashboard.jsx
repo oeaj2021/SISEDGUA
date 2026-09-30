@@ -8,7 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import StatsCard from '../components/StatsCard';
 import ExportButton from '../components/ExportButton';
 import GestionCapacidadMunicipios from '../components/GestionCapacidadMunicipios';
-import { getStats, getPorMunicipio, getTendencia, getReportes } from '../services/api';
+import InstitucionesNoReportadas from '../components/InstitucionesNoReportadas';
+import { getStats, getPorMunicipio, getTendencia, getReportes, getNoReportadas } from '../services/api';
 
 const MUNICIPIOS = [
   'ROSCIO', 'ORTIZ', 'MELLADO', 'MIRANDA', 'GUAYABAL', 'CAMAGUAN',
@@ -19,7 +20,7 @@ const MUNICIPIOS = [
 export default function Dashboard() {
   const { admin, logout } = useAuth();
 
-  // Pestaña activa: 'estadisticas' | 'municipios'
+  // Pestaña activa: 'estadisticas' | 'no_reportadas' | 'municipios'
   const [pestanaActiva, setPestanaActiva] = useState('estadisticas');
 
   const fechaHoy = new Date().toISOString().split('T')[0];
@@ -37,6 +38,8 @@ export default function Dashboard() {
   const [tendenciaData, setTendenciaData] = useState([]);
   const [reportesData, setReportesData] = useState([]);
   const [totalReportes, setTotalReportes] = useState(0);
+  const [noReportadasInfo, setNoReportadasInfo] = useState(null);
+  const [busquedaTabla, setBusquedaTabla] = useState('');
   const [page, setPage] = useState(1);
   const [cargando, setCargando] = useState(true);
 
@@ -44,11 +47,12 @@ export default function Dashboard() {
     setCargando(true);
     try {
       const params = { ...filtros };
-      const [resStats, resMun, resTen, resRep] = await Promise.all([
+      const [resStats, resMun, resTen, resRep, resNoRep] = await Promise.all([
         getStats(params),
         getPorMunicipio(params),
         getTendencia(params),
-        getReportes({ ...params, page, limit: 15 })
+        getReportes({ ...params, search: busquedaTabla, page, limit: 15 }),
+        getNoReportadas(params)
       ]);
 
       setStats(resStats.data);
@@ -56,6 +60,7 @@ export default function Dashboard() {
       setTendenciaData(resTen.data || []);
       setReportesData(resRep.data?.data || []);
       setTotalReportes(resRep.data?.total || 0);
+      setNoReportadasInfo(resNoRep.data || null);
     } catch (error) {
       console.error('Error cargando dashboard:', error);
     } finally {
@@ -67,7 +72,7 @@ export default function Dashboard() {
     if (pestanaActiva === 'estadisticas') {
       cargarDatos();
     }
-  }, [filtros, page, pestanaActiva]);
+  }, [filtros, page, pestanaActiva, busquedaTabla]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -123,6 +128,22 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => setPestanaActiva('no_reportadas')}
+            className={`py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
+              pestanaActiva === 'no_reportadas'
+                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
+            }`}
+          >
+            <span>⚠️</span> Instituciones Sin Reportar
+            {noReportadasInfo && noReportadasInfo.total_no_reportadas > 0 && (
+              <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full ml-1 shadow-xs">
+                {noReportadasInfo.total_no_reportadas}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setPestanaActiva('municipios')}
             className={`py-2 px-3.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
               pestanaActiva === 'municipios'
@@ -146,6 +167,13 @@ export default function Dashboard() {
         {pestanaActiva === 'municipios' ? (
           /* Pestaña: Matrícula y Personal Máximo Oficial por Municipio y Turno */
           <GestionCapacidadMunicipios />
+        ) : pestanaActiva === 'no_reportadas' ? (
+          /* Pestaña: Instituciones que NO Han Reportado */
+          <InstitucionesNoReportadas
+            filtros={filtros}
+            onFiltroChange={(nuevos) => setFiltros((prev) => ({ ...prev, ...nuevos }))}
+            onVolver={() => setPestanaActiva('estadisticas')}
+          />
         ) : (
           /* Pestaña: Métricas, Gráficas, Filtros y Tabla */
           <>
@@ -215,7 +243,7 @@ export default function Dashboard() {
 
             {/* Tarjetas KPIs Estadísticas */}
             {stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <StatsCard
                   icon="📋"
                   label="Instituciones Reportadas"
@@ -228,6 +256,25 @@ export default function Dashboard() {
                   subtext={filtros.municipio ? `En ${filtros.municipio}` : "Por municipio"}
                   color="blue"
                 />
+
+                <div
+                  onClick={() => setPestanaActiva('no_reportadas')}
+                  className="cursor-pointer transition-transform hover:scale-[1.02]"
+                  title="Haga clic para ver las instituciones pendientes"
+                >
+                  <StatsCard
+                    icon="⚠️"
+                    label="Sin Reportar"
+                    value={
+                      noReportadasInfo
+                        ? `${noReportadasInfo.total_no_reportadas} planteles`
+                        : '0 planteles'
+                    }
+                    subtext="Ver lista pendiente →"
+                    color="red"
+                  />
+                </div>
+
                 <StatsCard
                   icon="🟢"
                   label="Estudiantes Asistentes"
@@ -439,6 +486,104 @@ export default function Dashboard() {
                 <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
                   Orden cronológico
                 </span>
+              </div>
+
+              {/* Barra de Filtro Rápido por Municipio y Buscador en Vivo */}
+              <div className="p-4 bg-slate-50/80 border-b border-blue-100 space-y-3">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  {/* Buscador en vivo */}
+                  <div className="relative w-full sm:w-96">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                      🔍
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Buscar por institución, director o cédula..."
+                      value={busquedaTabla}
+                      onChange={(e) => {
+                        setBusquedaTabla(e.target.value);
+                        setPage(1);
+                      }}
+                      className="w-full pl-8 pr-8 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 font-medium text-slate-800"
+                    />
+                    {busquedaTabla && (
+                      <button
+                        onClick={() => {
+                          setBusquedaTabla('');
+                          setPage(1);
+                        }}
+                        className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Acceso rápido a planteles sin reportar */}
+                  {noReportadasInfo && noReportadasInfo.total_no_reportadas > 0 && (
+                    <button
+                      onClick={() => setPestanaActiva('no_reportadas')}
+                      className="w-full sm:w-auto bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold py-2 px-3.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    >
+                      <span>⚠️</span>
+                      <span>Ver {noReportadasInfo.total_no_reportadas} planteles sin reportar</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Filtro Rápido por Municipio para ver cómo van */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                      Filtrar registros por municipio:
+                    </span>
+                    {filtros.municipio && (
+                      <button
+                        onClick={() => {
+                          setFiltros((prev) => ({ ...prev, municipio: '' }));
+                          setPage(1);
+                        }}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-800 cursor-pointer"
+                      >
+                        Limpiar filtro ({filtros.municipio}) ✕
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                    <button
+                      onClick={() => {
+                        setFiltros((prev) => ({ ...prev, municipio: '' }));
+                        setPage(1);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                        !filtros.municipio
+                          ? 'bg-blue-700 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-blue-50 hover:text-blue-700'
+                      }`}
+                    >
+                      Todos ({totalReportes})
+                    </button>
+                    {MUNICIPIOS.map((m) => {
+                      const isActivo = filtros.municipio === m;
+                      return (
+                        <button
+                          key={m}
+                          onClick={() => {
+                            setFiltros((prev) => ({ ...prev, municipio: isActivo ? '' : m }));
+                            setPage(1);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1 ${
+                            isActivo
+                              ? 'bg-blue-700 text-white shadow-xs ring-2 ring-blue-300'
+                              : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:text-blue-700'
+                          }`}
+                        >
+                          <span>{m}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
