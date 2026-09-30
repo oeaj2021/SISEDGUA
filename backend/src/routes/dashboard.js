@@ -24,7 +24,7 @@ const ctrl = require('../controllers/dashboardController');
  *           type: string
  *           format: date
  *         example: "2026-09-29"
- *         description: Fecha de consulta (por defecto: hoy)
+ *         description: "Fecha de consulta (por defecto: hoy)"
  *       - name: municipio
  *         in: query
  *         required: false
@@ -179,7 +179,7 @@ const ctrl = require('../controllers/dashboardController');
  *           minimum: 1
  *           maximum: 30
  *         example: 7
- *         description: Número de días hacia atrás (default: 7)
+ *         description: "Número de días hacia atrás (default: 7)"
  *       - name: municipio
  *         in: query
  *         required: false
@@ -250,7 +250,7 @@ const ctrl = require('../controllers/dashboardController');
  *           type: integer
  *           minimum: 1
  *         example: 1
- *         description: Número de página (default: 1)
+ *         description: "Número de página (default: 1)"
  *       - name: limit
  *         in: query
  *         required: false
@@ -259,7 +259,7 @@ const ctrl = require('../controllers/dashboardController');
  *           minimum: 10
  *           maximum: 100
  *         example: 50
- *         description: Elementos por página (default: 50)
+ *         description: "Elementos por página (default: 50)"
  *     responses:
  *       200:
  *         description: Lista paginada de reportes

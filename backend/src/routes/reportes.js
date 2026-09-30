@@ -141,7 +141,7 @@ const submitLimiter = rateLimit({
  *       400:
  *         description: Validación fallida (campos requeridos, turno inválido, municipio inválido)
  *       403:
- *         description: Fuera de horario de operación (4:00 AM - 6:00 PM)
+ *         description: "Fuera de horario de operación escolar"
  *       429:
  *         description: Límite de reportes excedido
  *       500:
