@@ -72,6 +72,9 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-3">
               <NavLink to="/consejos-comunales" className={navLinkClass}>
                 <span>Consejos Comunales</span>
+                <span className="bg-red-500/20 text-red-200 border border-red-400/40 text-[10px] font-black px-1.5 py-0.5 rounded uppercase">
+                  Cerrado
+                </span>
               </NavLink>
 
               {isAuthenticated ? (
@@ -151,7 +154,10 @@ export default function Navbar() {
                 onClick={() => setMenuAbierto(false)}
                 className={navLinkClass}
               >
-                <span>Consejos Comunales</span>
+                <span className="flex-1">Consejos Comunales</span>
+                <span className="bg-red-500/20 text-red-200 border border-red-400/40 text-[10px] font-black px-1.5 py-0.5 rounded uppercase">
+                  Cerrado
+                </span>
               </NavLink>
 
               {isAuthenticated ? (

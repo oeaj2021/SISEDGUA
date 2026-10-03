@@ -2,9 +2,25 @@ import React, { useEffect, useState, useRef } from 'react';
 import { getConsejosComunalesStats } from '../services/api';
 
 const MUNICIPIOS_ORDENADOS = [
-  'ROSCIO', 'INFANTE', 'MIRANDA', 'ZARAZA', 'MONAGAS',
-  'MELLADO', 'RIBAS', 'RONDON', 'EL SOCORRO', 'SANTA MARIA',
-  'CHAGUARAMAS', 'GUAYABAL', 'GUARIBE', 'CAMAGUAN', 'ORTIZ'
+  { id: 'ROSCIO', nombre: 'ROSCIO' },
+  { id: 'INFANTE', nombre: 'INFANTE' },
+  { id: 'MIRANDA', nombre: 'MIRANDA' },
+  { id: 'ZARAZA', nombre: 'ZARAZA' },
+  { id: 'MONAGAS', nombre: 'MONAGAS' },
+  { id: 'MELLADO', nombre: 'MELLADO' },
+  { id: 'RIBAS', nombre: 'RIBAS' },
+  { id: 'RONDON', nombre: 'RONDÓN' },
+  { id: 'EL SOCORRO', nombre: 'EL SOCORRO' },
+  {
+    id: 'SANTA MARIA DE IPIRE',
+    nombre: 'SANTA MARÍA DE IPIRE',
+    alias: ['SANTA MARIA', 'SANTA MARIA DE IPIRE', 'SANTA MARÍA', 'SANTA MARÍA DE IPIRE']
+  },
+  { id: 'CHAGUARAMAS', nombre: 'CHAGUARAMAS' },
+  { id: 'GUAYABAL', nombre: 'GUAYABAL' },
+  { id: 'GUARIBE', nombre: 'GUARIBE' },
+  { id: 'CAMAGUAN', nombre: 'CAMAGUÁN' },
+  { id: 'ORTIZ', nombre: 'ORTIZ' }
 ];
 
 export default function ConteoComunidadesBar() {
@@ -30,13 +46,29 @@ export default function ConteoComunidadesBar() {
         const mapa = {};
         rawList.forEach((item) => {
           const m = (item.municipio || '').toUpperCase().trim();
-          mapa[m] = parseInt(item.total, 10) || 0;
+          mapa[m] = (mapa[m] || 0) + (parseInt(item.total, 10) || 0);
         });
 
-        const listado = MUNICIPIOS_ORDENADOS.map((mun) => ({
-          municipio: mun,
-          total: mapa[mun] || 0
-        }));
+        // Sumar todas las variantes posibles de Santa María de Ipire
+        const totalSantaMaria =
+          (mapa['SANTA MARIA DE IPIRE'] || 0) +
+          (mapa['SANTA MARIA'] || 0) +
+          (mapa['SANTA MARÍA DE IPIRE'] || 0) +
+          (mapa['SANTA MARÍA'] || 0);
+
+        const listado = MUNICIPIOS_ORDENADOS.map((item) => {
+          let tot = mapa[item.id] || 0;
+          if (item.id === 'SANTA MARIA DE IPIRE' || item.id === 'SANTA MARIA') {
+            tot = totalSantaMaria;
+          } else if (item.alias && Array.isArray(item.alias)) {
+            tot = item.alias.reduce((acc, k) => acc + (mapa[k] || 0), 0);
+          }
+          return {
+            municipio: item.nombre,
+            id: item.id,
+            total: tot
+          };
+        });
 
         setDataConteo({
           totalRegistros: res.data.totalRegistros || 0,
@@ -93,7 +125,6 @@ export default function ConteoComunidadesBar() {
 
   useEffect(() => {
     cargarConteo();
-    // Auto-actualizar cada 60 segundos
     const timer = setInterval(() => {
       if (!document.hidden) {
         cargarConteo();
@@ -104,19 +135,20 @@ export default function ConteoComunidadesBar() {
 
   useEffect(() => {
     const el = scrollContainerRef.current;
-    if (el) {
-      checkScrollPosition();
-      el.addEventListener('scroll', checkScrollPosition, { passive: true });
-      window.addEventListener('resize', checkScrollPosition);
-      return () => {
-        el.removeEventListener('scroll', checkScrollPosition);
-        window.removeEventListener('resize', checkScrollPosition);
-      };
-    }
+    if (!el) return;
+
+    checkScrollPosition();
+    el.addEventListener('scroll', checkScrollPosition, { passive: true });
+    window.addEventListener('resize', checkScrollPosition);
+
+    return () => {
+      el.removeEventListener('scroll', checkScrollPosition);
+      window.removeEventListener('resize', checkScrollPosition);
+    };
   }, [dataConteo]);
 
   return (
-    <div className="bg-slate-950 border-b border-indigo-900/60 text-white select-none">
+    <div className="bg-slate-950/95 border-b border-indigo-900/60 text-white select-none">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-1.5 flex flex-col md:flex-row items-center gap-2">
         {/* Indicador General de Comunidades */}
         <div className="flex items-center gap-2 shrink-0 py-0.5">
@@ -164,7 +196,7 @@ export default function ConteoComunidadesBar() {
 
                   return (
                     <div
-                      key={item.municipio}
+                      key={item.id || item.municipio}
                       className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-xs transition-all shadow-sm ${
                         tieneRegistros
                           ? 'bg-gradient-to-r from-indigo-950/90 to-blue-900/90 border-indigo-500/80 text-white font-semibold'
@@ -178,19 +210,19 @@ export default function ConteoComunidadesBar() {
                       <span
                         className={`font-mono font-black px-1.5 py-0.5 rounded text-[11px] ${
                           tieneRegistros
-                            ? 'bg-indigo-400 text-slate-950 shadow-inner'
-                            : 'bg-slate-800 text-slate-300'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'bg-slate-800 text-slate-500'
                         }`}
                       >
-                        {item.total}
+                        {cargando ? '...' : item.total}
                       </span>
                     </div>
                   );
                 })
               ) : (
-                <span className="text-xs text-slate-400 italic py-0.5">
-                  {cargando ? 'Cargando conteo por municipio...' : 'Esperando registros comunales'}
-                </span>
+                <div className="text-xs text-slate-500 py-0.5">
+                  Cargando consolidado comunal por municipio...
+                </div>
               )}
             </div>
           </div>

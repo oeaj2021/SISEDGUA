@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { MUNICIPIOS_GUARICO, COMITES_CONSEJO_COMUNAL } from '../utils/guaricoData';
 import { consejoComunalSchema } from '../schemas/consejoComunalSchema';
@@ -210,6 +211,91 @@ export default function RegistroConsejoComunal() {
       setSubmitting(false);
     }
   };
+
+  const REGISTRO_CERRADO = true;
+
+  if (REGISTRO_CERRADO) {
+    return (
+      <div className="min-h-screen bg-slate-100 py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          {/* Cabecera Oficial Institucional con Banner Translúcido */}
+          <header className="bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 rounded-2xl p-6 sm:p-8 shadow-md border border-blue-800 mb-6 text-center text-white">
+            <img
+              src="/cde-guarico-banner.png"
+              alt="Centro de Desarrollo de la Calidad Educativa Guárico"
+              className="h-12 sm:h-16 w-auto mx-auto object-contain mb-4 filter drop-shadow-md"
+            />
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-800/80 text-blue-100 text-xs font-bold rounded-full uppercase tracking-wider mb-3 border border-blue-700/60 shadow-inner">
+              <span className="w-2 h-2 rounded-full bg-red-400"></span>
+              Sala Situacional CDCE ESTADAL GUÁRICO
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug">
+              Sector Educativo Participa en Consejos Comunales
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-blue-200 max-w-xl mx-auto font-medium">
+              Instrumento oficial de captación y vinculación del personal educativo en las estructuras del Poder Popular.
+            </p>
+          </header>
+
+          {/* Tarjeta de Cierre Indefinido */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden text-center p-8 sm:p-12 mb-8">
+            <div className="mx-auto w-20 h-20 rounded-full bg-red-100 border-4 border-red-200 flex items-center justify-center text-red-600 mb-6 shadow-inner">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 text-xs font-black rounded-full uppercase tracking-wider mb-4 border border-red-200">
+              <span className="w-2 h-2 rounded-full bg-red-600"></span>
+              Proceso de Registro Concluido
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-3">
+              Registro Cerrado Indefinidamente
+            </h2>
+
+            <p className="text-slate-600 max-w-lg mx-auto text-sm sm:text-base leading-relaxed mb-6 font-medium">
+              El enlace oficial para el registro y captación del personal educativo en los Consejos Comunales ha finalizado su jornada y se encuentra cerrado indefinidamente por disposición de la <strong>Sala Situacional del CDCE Guárico</strong>.
+            </p>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 max-w-md mx-auto mb-8 text-left space-y-3 text-xs sm:text-sm text-slate-700">
+              <div className="flex items-start gap-2.5">
+                <span className="text-base">🏛️</span>
+                <div>
+                  <strong className="text-slate-900 block font-bold">Consolidación Estadal:</strong>
+                  <span>Los datos recolectados se encuentran en fase de consolidación, análisis y auditoría.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-base">📊</span>
+                <div>
+                  <strong className="text-slate-900 block font-bold">Módulo de Auditoría y Métricas:</strong>
+                  <span>El personal directivo y coordinadores pueden acceder a las estadísticas y registros consolidados.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+              <Link
+                to="/consejos-comunales/registros"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-sm shadow-md hover:shadow-lg transition cursor-pointer"
+              >
+                <span>📊</span>
+                <span>Consultar Registros (Admin)</span>
+              </Link>
+              <Link
+                to="/"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition cursor-pointer"
+              >
+                <span>🏠</span>
+                <span>Ir a SISEDGUA</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 py-6 sm:py-10 px-3 sm:px-6 lg:px-8">

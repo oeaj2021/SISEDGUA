@@ -18,9 +18,15 @@ const sanitizarTexto = (texto) => {
 
 /**
  * POST /api/consejos-comunales
- * Registro institucional público (Mobile-First)
+ * Registro institucional público (Mobile-First) - CERRADO INDEFINIDAMENTE
  */
 exports.crearRegistro = async (req, res) => {
+  return res.status(403).json({
+    error: 'El proceso de registro de consejos comunales ha finalizado y se encuentra cerrado indefinidamente por disposición de la Sala Situacional.'
+  });
+};
+
+exports.crearRegistroOriginal = async (req, res) => {
   try {
     const {
       nacionalidad = 'V',
@@ -488,7 +494,12 @@ exports.listarRegistros = async (req, res) => {
     }
 
     if (municipio && String(municipio).trim()) {
-      where.municipio = String(municipio).trim();
+      const cleanMun = String(municipio).trim();
+      if (cleanMun === 'SANTA MARIA DE IPIRE' || cleanMun === 'SANTA MARIA') {
+        where.municipio = { [Op.in]: ['SANTA MARIA DE IPIRE', 'SANTA MARIA'] };
+      } else {
+        where.municipio = cleanMun;
+      }
     }
 
     if (tipo_personal && String(tipo_personal).trim()) {
@@ -541,7 +552,12 @@ exports.exportarExcel = async (req, res) => {
     }
 
     if (municipio && String(municipio).trim()) {
-      where.municipio = String(municipio).trim();
+      const cleanMun = String(municipio).trim();
+      if (cleanMun === 'SANTA MARIA DE IPIRE' || cleanMun === 'SANTA MARIA') {
+        where.municipio = { [Op.in]: ['SANTA MARIA DE IPIRE', 'SANTA MARIA'] };
+      } else {
+        where.municipio = cleanMun;
+      }
     }
 
     if (tipo_personal && String(tipo_personal).trim()) {
